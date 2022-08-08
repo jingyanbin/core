@@ -74,7 +74,7 @@ func (my *DateTime) UnixYearWeekNumAByISO() (int, int) {
 	return UnixYearWeekNumAByISO(my.unix, my.zone)
 }
 
-//@description: 返回周几, 星期1为一周的开始
+// WeekdayA @description: 返回周几, 星期1为一周的开始
 //@return:      week int "星期(1-7)"
 func (my *DateTime) WeekdayA() int {
 	return UnixWeekdayA(my.unix, my.zone)
