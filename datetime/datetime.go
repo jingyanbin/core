@@ -68,7 +68,7 @@ func (my *DateTime) SetZone(zone tz.TimeZone) {
 	}
 }
 
-//@description: 返回星期数, 星期1为一周的开始
+// UnixYearWeekNumAByISO @description: 返回星期数, 星期1为一周的开始
 //@return:      int(1-53) "第几周"
 func (my *DateTime) UnixYearWeekNumAByISO() (int, int) {
 	return UnixYearWeekNumAByISO(my.unix, my.zone)
