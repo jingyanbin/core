@@ -86,7 +86,7 @@ func formatStack(name, file string, err string, stack []byte) *Buffer {
 	return buf
 }
 
-func CatchError(catch func(e error)) {
+func ExceptionError(catch func(e error)) {
 	if err := recover(); err != nil {
 		catch(ToError(err))
 	}

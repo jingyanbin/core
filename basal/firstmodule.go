@@ -131,7 +131,7 @@ func FindFuncWithName(name string) (uintptr, error) {
 }
 
 func GetFunc(outFuncPtr interface{}, name string) (err error) {
-	defer internal.CatchError(func(e error) {
+	defer internal.ExceptionError(func(e error) {
 		err = NewError("exception: %v", e)
 	})
 	if IsPointer(outFuncPtr) == false {
@@ -151,7 +151,7 @@ type function struct {
 }
 
 func CreateFuncForCodePtr(outFuncPtr interface{}, codePtr uintptr) (err error) {
-	defer internal.CatchError(func(e error) {
+	defer internal.ExceptionError(func(e error) {
 		err = e
 	})
 	outFuncVal := reflect.ValueOf(outFuncPtr).Elem()
