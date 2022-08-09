@@ -2,20 +2,64 @@ package basal
 
 //有序列表
 type SortedList struct {
-	buf     []interface{}
-	Cmp     func(min, max interface{}) int //返回值 min < max return 1, min == max return 0, min > max return -1
-	Reverse bool                           //反序
+	buf         []interface{}
+	scoreRepeat bool                      //排序值是否可重复
+	reverse     bool                      //反序
+	getScore    func(v interface{}) int64 //获取分数函数
+	getKey      func(v interface{}) int64 //获取key int
+}
+
+func (my *SortedList) String() string {
+	return Sprintf("%v", my.buf)
+}
+
+func (my *SortedList) reduceSpace() {
+	length := len(my.buf)
+	max := cap(my.buf)
+	if length == 0 {
+		my.buf = nil
+	} else {
+		curMax := max / 2
+		if curMax > length {
+			buf := make([]interface{}, length, curMax)
+			copy(buf, my.buf)
+			my.buf = buf
+		}
+	}
 }
 
 func (my *SortedList) Len() int {
 	return len(my.buf)
 }
 
+func (my *SortedList) Cap() int {
+	return cap(my.buf)
+}
+
 func (my *SortedList) Slice() []interface{} {
 	return my.buf
 }
 
-func (my *SortedList) binarySearch(value interface{}) (index int, found bool) {
+func (my *SortedList) cmp(min, max int64) int {
+	if min < max {
+		return 1
+	} else if min > max {
+		return -1
+	} else {
+		return 0
+	}
+}
+
+func (my *SortedList) SearchByKey(key int64) (int, bool) {
+	for idx, item := range my.buf {
+		if my.getKey(item) == key {
+			return idx, true
+		}
+	}
+	return 0, false
+}
+
+func (my *SortedList) SearchByScore(score int64) (index int, found bool) {
 	length := len(my.buf)
 	if length == 0 {
 		return 0, false
@@ -25,8 +69,8 @@ func (my *SortedList) binarySearch(value interface{}) (index int, found bool) {
 	var cmp int
 	for {
 		index = start + (end-start)/2
-		cmp = my.Cmp(value, my.buf[index])
-		if my.Reverse {
+		cmp = my.cmp(score, my.getScore(my.buf[index]))
+		if my.reverse {
 			if cmp == 1 {
 				start = index + 1
 			} else if cmp == -1 {
@@ -74,6 +118,7 @@ func (my *SortedList) PopFront() (v interface{}, found bool) {
 	if len(my.buf) > 0 {
 		v = my.buf[0]
 		my.buf = my.buf[1:]
+		my.reduceSpace()
 		return v, true
 	} else {
 		return nil, false
@@ -85,6 +130,7 @@ func (my *SortedList) PopBack() (v interface{}, found bool) {
 	if length > 0 {
 		v = my.buf[length-1]
 		my.buf = my.buf[:length-1]
+		my.reduceSpace()
 		return v, true
 	} else {
 		return nil, false
@@ -103,21 +149,9 @@ func (my *SortedList) Get(index int) (v interface{}, found bool) {
 	}
 }
 
-func (my *SortedList) Del(index int) bool {
-	if index < 0 || index >= len(my.buf) {
-		return false
-	}
-	my.buf = append(my.buf[:index], my.buf[index+1:]...)
-	return true
-}
-
-func (my *SortedList) Find(v interface{}) (index int, found bool) {
-	return my.binarySearch(v)
-}
-
-func (my *SortedList) add(v interface{}, repeat bool) bool {
-	index, found := my.binarySearch(v)
-	if found && repeat == false {
+func (my *SortedList) Add(v interface{}) bool {
+	index, found := my.SearchByScore(my.getScore(v))
+	if found && my.scoreRepeat == false {
 		return false
 	}
 	my.buf = append(my.buf, v)
@@ -126,20 +160,45 @@ func (my *SortedList) add(v interface{}, repeat bool) bool {
 	return true
 }
 
-func (my *SortedList) Add(v interface{}) bool {
-	return my.add(v, true)
+func (my *SortedList) RemoveByIndex(index int) bool {
+	if index < 0 || index >= len(my.buf) {
+		return false
+	}
+	my.buf = append(my.buf[:index], my.buf[index+1:]...)
+	my.reduceSpace()
+	return true
 }
 
-func (my *SortedList) Remove(v interface{}) bool {
-	index, found := my.binarySearch(v)
+func (my *SortedList) RemoveByScore(score int64) bool {
+	index, found := my.SearchByScore(score)
 	if found {
 		my.buf = append(my.buf[:index], my.buf[index+1:]...)
+		my.reduceSpace()
 		return true
 	} else {
 		return false
 	}
 }
 
+func (my *SortedList) RemoveByKey(key int64) bool {
+	index, found := my.SearchByKey(key)
+	if found {
+		my.buf = append(my.buf[:index], my.buf[index+1:]...)
+		my.reduceSpace()
+		return true
+	} else {
+		return false
+	}
+}
+
+//func (my *SortedList) Reset() {
+//	my.buf = my.buf[:0]
+//}
+
 func (my *SortedList) Clear() {
-	my.buf = my.buf[:0]
+	my.buf = nil
+}
+
+func NewSortedList(scoreRepeat, reverse bool, getScore func(v interface{}) int64, getKey func(v interface{}) int64) *SortedList {
+	return &SortedList{scoreRepeat: scoreRepeat, reverse: reverse, getScore: getScore, getKey: getKey}
 }

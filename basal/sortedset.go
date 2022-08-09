@@ -4,11 +4,28 @@ import "github.com/jingyanbin/core/deepcopy"
 
 //有序集合
 type SortedSet struct {
-	SortedList
+	*SortedList
 }
 
-func (my *SortedSet) Add(v interface{}) bool {
-	return my.add(v, false)
+//my与b的差集
+func (my *SortedSet) Difference(b *SortedSet) *SortedSet {
+	c := deepcopy.Copy(my).(*SortedSet)
+	for _, value := range b.buf {
+		c.RemoveByKey(my.getKey(value))
+	}
+	return c
+}
+
+//交集
+func (my *SortedSet) Intersection(b *SortedSet) *SortedSet {
+	c := NewSortedSet(my.reverse, my.getScore, my.getKey)
+	for _, value := range my.buf {
+		_, found := b.SearchByKey(my.getKey(value))
+		if found {
+			c.Add(value)
+		}
+	}
+	return c
 }
 
 //并集
@@ -20,50 +37,25 @@ func (my *SortedSet) Union(b *SortedSet) *SortedSet {
 	return c
 }
 
-//my与b的差集
-func (my *SortedSet) Difference(b *SortedList) *SortedList {
-	c := deepcopy.Copy(my).(*SortedList)
-	for _, value := range b.buf {
-		c.Remove(value)
-	}
-	return c
+func (my *SortedSet) Add(v interface{}) bool {
+	my.RemoveByKey(my.getKey(v))
+	return my.SortedList.Add(v)
 }
 
-//交集
-func (my *SortedSet) Intersection(b *SortedSet) *SortedSet {
-	c := NewSortedSet(my.Cmp, my.Reverse)
-	for _, value := range my.buf {
-		_, found := b.binarySearch(value)
-		if found {
-			c.Add(value)
-		}
-	}
-	return c
-}
-
-func NewSortedSet(cmp func(min, max interface{}) int, reverse bool) *SortedSet {
-	return &SortedSet{SortedList{Cmp: cmp, Reverse: reverse}}
+func NewSortedSet(reverse bool, getScore func(v interface{}) int64, getKey func(v interface{}) int64) *SortedSet {
+	return &SortedSet{SortedList: NewSortedList(true, reverse, getScore, getKey)}
 }
 
 func NewSortedSetInt(reverse bool) *SortedSet {
-	set := &SortedSet{}
-	set.Reverse = reverse
-	set.Cmp = func(min, max interface{}) int {
-		x, err := ToInt64(min)
+	getScore := func(v interface{}) int64 {
+		x, err := ToInt64(v)
 		if err != nil {
-			panic(NewError("SortedSet min not is int: %v", min))
+			panic(NewError("NewSortedSetInt min not is int: %v", Type(v)))
 		}
-		y, err := ToInt64(max)
-		if err != nil {
-			panic(NewError("SortedSet max not is int: %v", min))
-		}
-		if x < y {
-			return 1
-		} else if x > y {
-			return -1
-		} else {
-			return 0
-		}
+		return x
 	}
+	set := NewSortedSet(
+		false,
+		getScore, getScore)
 	return set
 }
