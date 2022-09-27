@@ -27,7 +27,7 @@ func IsUTF8(buf []byte) bool {
 				}
 				nBytes-- //减掉首字节的一个计数
 			}
-		} else {                     //处理多字节字符
+		} else { //处理多字节字符
 			if buf[i]&0xc0 != 0x80 { //判断多字节后面的字节是否是10开头
 				return false
 			}
@@ -90,6 +90,23 @@ func SamePtr(ptrs ...interface{}) bool {
 	return false
 }
 
+func ToJsonString(value interface{}, indent bool) (string, error) {
+	b, err := json.Marshal(value)
+	if err != nil {
+		return "", err
+	}
+	if indent {
+		var out bytes.Buffer
+		err = json.Indent(&out, b, "", "    ")
+		if err != nil {
+			return string(b), nil
+		}
+		return out.String(), nil
+	} else {
+		return string(b), nil
+	}
+}
+
 func ToString(value interface{}, indent bool) (string, error) {
 	switch v := value.(type) {
 	case string:
@@ -111,8 +128,7 @@ func ToString(value interface{}, indent bool) (string, error) {
 	case float32:
 		return strconv.FormatFloat(float64(v), 'f', -1, 32), nil
 	case map[string]interface{}, []interface{}:
-		b, err := json.Marshal(v)
-		return string(b), err
+		return ToJsonString(v, indent)
 	case []byte:
 		return string(v), nil
 	case json.Number:
@@ -122,20 +138,7 @@ func ToString(value interface{}, indent bool) (string, error) {
 		kd := vi.Kind()
 		switch kd {
 		case reflect.Struct:
-			b, err := json.Marshal(vi.Interface())
-			if err != nil {
-				return "", err
-			}
-			if indent {
-				var out bytes.Buffer
-				err = json.Indent(&out, b, "", "    ")
-				if err != nil {
-					return string(b), nil
-				}
-				return out.String(), nil
-			} else {
-				return string(b), nil
-			}
+			return ToJsonString(vi, indent)
 		case reflect.Ptr:
 			if vi.IsNil() {
 				return fmt.Sprintf("<nil %v>", vi.Type()), nil
@@ -143,20 +146,7 @@ func ToString(value interface{}, indent bool) (string, error) {
 			kd2 := vi.Elem().Kind()
 			switch kd2 {
 			case reflect.Struct:
-				b, err := json.Marshal(vi.Elem().Interface())
-				if err != nil {
-					return "", err
-				}
-				if indent {
-					var out bytes.Buffer
-					err = json.Indent(&out, b, "", "    ")
-					if err != nil {
-						return string(b), nil
-					}
-					return out.String(), nil
-				} else {
-					return string(b), nil
-				}
+				return ToJsonString(vi.Elem().Interface(), indent)
 			default:
 				return "", NewError("ToString value ptr type error: %v", vi.Type())
 			}
@@ -224,6 +214,12 @@ func ToFloat32(value interface{}) (float32, error) {
 
 func ToInt64(value interface{}) (int64, error) {
 	switch n := value.(type) {
+	case bool:
+		if n {
+			return 1, nil
+		} else {
+			return 0, nil
+		}
 	case int:
 		return int64(n), nil
 	case int8:
@@ -322,6 +318,14 @@ func ToUint8(value interface{}) (uint8, error) {
 func ToUint(value interface{}) (uint, error) {
 	v, err := ToInt64(value)
 	return uint(v), err
+}
+
+func Int64ToBool(value int64) bool {
+	return value != 0
+}
+
+func Int32ToBool(value int32) bool {
+	return value != 0
 }
 
 //驼峰写法转下划线小写 eg: LevelAbc=>level_abc

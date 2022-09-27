@@ -1,7 +1,7 @@
 package filequeue
 
 import (
-	"bytes"
+	"encoding/binary"
 	"github.com/jingyanbin/core/basal"
 	internal "github.com/jingyanbin/core/internal"
 	"os"
@@ -18,7 +18,7 @@ type FileQueuePusher struct {
 	f      *os.File         //当前写入文件
 }
 
-//当前大小
+// 当前大小
 func (m *FileQueuePusher) size() (size int64, err error) {
 	if err = m.reopen(false); err != nil {
 		return 0, err
@@ -67,7 +67,7 @@ func (m *FileQueuePusher) push(data []byte) (err error) {
 		return err
 	}
 	if m.conf.options.MsgFileMaxByte > 0 && size > m.conf.options.MsgFileMaxByte {
-		if _, err = m.write([]byte{msgEOF}); err != nil {
+		if _, err = m.write([]byte{msgEOF}); err != nil { //类型为27是文件结束符
 			return err
 		}
 		if err = m.conf.Next(); err != nil {
@@ -78,20 +78,25 @@ func (m *FileQueuePusher) push(data []byte) (err error) {
 		}
 	}
 	dLen := len(data)
-	if dLen > 0 {
-		if !bytes.HasSuffix(data, m.conf.options.Sep) {
-			data = append(data, m.conf.options.Sep...)
-		}
-	} else {
-		data = append(data, m.conf.options.Sep...)
+	if dLen == 0 {
+		return basal.NewError("数据为空")
 	}
-
+	//if data[dLen-1] != '\n' {
+	//	data = append(data, '\n')
+	//}
+	data = append(data, '\n')
+	dLen = len(data)
+	pushData := make([]byte, 5, dLen+5)
+	//pushData = append(pushData, 0) //类型为0是一般消息
+	//pushData = binary.BigEndian.Uint32(pushData, uint32(dLen))
+	binary.BigEndian.PutUint32(pushData[1:], uint32(dLen))
+	pushData = append(pushData, data...)
 	var n int
-	if n, err = m.write(data); err != nil {
+	if n, err = m.write(pushData); err != nil {
 		if err = m.reopen(true); err != nil {
 			return err
 		}
-		_, err = m.write(data[n:])
+		_, err = m.write(pushData[n:])
 	}
 	return err
 }

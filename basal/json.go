@@ -22,6 +22,10 @@ func (my *Json) String() string {
 	return s
 }
 
+func (my *Json) Interface() interface{} {
+	return my.data
+}
+
 func (my *Json) IsNil() bool {
 	return my.data == nil
 }
@@ -46,7 +50,15 @@ func (my *Json) ToFloat32() (float32, error) {
 	return ToFloat32(my.data)
 }
 
-func (my *Json) Float64() (float64, bool) {
+func (my *Json) ToBool() (bool, error) {
+	v, err := ToInt64(my.data)
+	if err != nil {
+		return false, err
+	}
+	return v != 0, err
+}
+
+func (my *Json) TryFloat64() (float64, bool) {
 	if number, ok := my.data.(json.Number); ok {
 		v, err := number.Float64()
 		if err != nil {
@@ -57,8 +69,8 @@ func (my *Json) Float64() (float64, bool) {
 	return 0, false
 }
 
-func (my *Json) Float32() (float32, bool) {
-	if v, ok := my.Float64(); ok {
+func (my *Json) TryFloat32() (float32, bool) {
+	if v, ok := my.TryFloat64(); ok {
 		if v > math.MaxFloat32 || v < -math.MaxFloat32 {
 			return 0, false
 		}
@@ -67,40 +79,42 @@ func (my *Json) Float32() (float32, bool) {
 	return 0, false
 }
 
-func (my *Json) Int64() (int64, bool) {
+func (my *Json) TryInt64() (int64, error) {
 	if number, ok := my.data.(json.Number); ok {
 		v, err := number.Int64()
 		if err != nil {
-			return 0, false
+			return 0, err
 		}
-		return v, true
+		return v, nil
 	}
-	return 0, false
+	return 0, NewError("json.Number value type error: %v", Type(my.data))
 }
 
-func (my *Json) Int32() (int32, bool) {
-	if v, ok := my.Int64(); ok {
-		if v > math.MaxInt32 || v < math.MinInt32 {
-			return 0, false
-		}
-		return int32(v), true
+func (my *Json) TryInt32() (int32, error) {
+	v, err := my.TryInt64()
+	if err != nil {
+		return 0, err
 	}
-	return 0, false
+	if v > math.MaxInt32 || v < math.MinInt32 {
+		return 0, NewError("overflow int32 value error: %v", my.data)
+	}
+	return int32(v), nil
 }
 
-func (my *Json) Int() (int, bool) {
-	if v, ok := my.Int64(); ok {
-		return int(v), true
+func (my *Json) TryInt() (int, error) {
+	v, err := my.TryInt64()
+	if err != nil {
+		return 0, err
 	}
-	return 0, false
+	return int(v), nil
 }
 
-func (my *Json) Bool() (v bool, ok bool) {
+func (my *Json) TryBool() (v bool, ok bool) {
 	v, ok = my.data.(bool)
 	return
 }
 
-func (my *Json) Slice() ([]interface{}, error) {
+func (my *Json) TrySlice() ([]interface{}, error) {
 	v, ok := my.data.([]interface{})
 	if ok {
 		return v, nil
@@ -109,7 +123,7 @@ func (my *Json) Slice() ([]interface{}, error) {
 	}
 }
 
-func (my *Json) Map() (map[string]interface{}, error) {
+func (my *Json) TryMap() (map[string]interface{}, error) {
 	v, ok := my.data.(map[string]interface{})
 	if ok {
 		return v, nil
@@ -118,7 +132,7 @@ func (my *Json) Map() (map[string]interface{}, error) {
 	}
 }
 
-func (my *Json) Bytes() ([]byte, error) {
+func (my *Json) TryBytes() ([]byte, error) {
 	if my.data == nil {
 		return nil, NewError("json is nil")
 	}
@@ -149,8 +163,45 @@ func (my *Json) Get(keys ...interface{}) interface{} {
 	return v
 }
 
+func (my *Json) Bool() bool {
+	v, ok := my.TryBool()
+	if !ok {
+		panic(NewError("bool value type error: %v", Type(my.data)))
+	}
+	return v
+}
+
+func (my *Json) Int64() int64 {
+	v, err := my.TryInt64()
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+func (my *Json) Int32() int32 {
+	return int32(my.Int64())
+}
+
+func (my *Json) Slice() []interface{} {
+	v, ok := my.data.([]interface{})
+	if ok {
+		return v
+	} else {
+		panic(NewError("[]interface{} value type error: %v", Type(my.data)))
+	}
+}
+
+func (my *Json) RangeSliceJson(f func(elem *Json) bool) {
+	for _, v := range my.Slice() {
+		if !f(&Json{v}) {
+			return
+		}
+	}
+}
+
 func (my *Json) Loads(js interface{}) error {
-	obj, err := NewJson(js)
+	obj, err := TryNewJson(js)
 	if err != nil {
 		return err
 	}
@@ -406,7 +457,7 @@ func findSliceIndex(data interface{}, index int) (interface{}, bool, error) {
 	}
 }
 
-func NewJson(js interface{}) (*Json, error) {
+func TryNewJson(js interface{}) (*Json, error) {
 	switch v := js.(type) {
 	case string:
 		return loadJson([]byte(v))
@@ -422,6 +473,14 @@ func NewJson(js interface{}) (*Json, error) {
 		return loadJson(bs)
 	}
 	return nil, NewError("new json type error: %v", Type(js))
+}
+
+func NewJson(js interface{}) *Json {
+	v, err := TryNewJson(js)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }
 
 func loadJson(v []byte) (*Json, error) {

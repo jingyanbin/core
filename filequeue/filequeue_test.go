@@ -6,9 +6,6 @@ import (
 
 func BenchmarkFileQueue(b *testing.B) {
 	opt := &Options{
-		ConfDataDir:      "file_queue",
-		MsgFileDir:       "testlog",
-		FileNamePrefix:   "test",
 		MsgFileMaxByte:   MBToByteCount(1),
 		PushChanSize:     1000,
 		DeletePoppedFile: true,
@@ -25,9 +22,6 @@ func BenchmarkFileQueue(b *testing.B) {
 
 func BenchmarkFileQueuePop(b *testing.B) {
 	opt := &Options{
-		ConfDataDir:      "file_queue",
-		MsgFileDir:       "testlog",
-		FileNamePrefix:   "test",
 		MsgFileMaxByte:   MBToByteCount(1),
 		PushChanSize:     1000,
 		DeletePoppedFile: true,

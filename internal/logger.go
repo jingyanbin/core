@@ -7,6 +7,7 @@ import (
 )
 
 type ILogger interface {
+	InfoF(format string, v ...interface{})
 	ErrorF(format string, v ...interface{})
 }
 
@@ -31,14 +32,22 @@ func (m *stdoutLogger) run() {
 	}
 }
 
-func (m *stdoutLogger) ErrorF(format string, v ...interface{}) {
+func (m *stdoutLogger) output(level string, format string, v ...interface{}) {
 	s := fmt.Sprintf(format, v...)
 	sLen := len(s)
 	if (sLen > 0 && s[sLen-1] != '\n') || sLen == 0 {
-		m.ch <- "[ERROR] " + s + "\n"
+		m.ch <- level + s + "\n"
 	} else {
-		m.ch <- "[ERROR] " + s
+		m.ch <- level + s
 	}
+}
+
+func (m *stdoutLogger) ErrorF(format string, v ...interface{}) {
+	m.output("[ERRO] ", format, v...)
+}
+
+func (m *stdoutLogger) InfoF(format string, v ...interface{}) {
+	m.output("[INFO] ", format, v...)
 }
 
 func newStdoutLogger() *stdoutLogger {

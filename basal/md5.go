@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"os"
+	_ "unsafe"
 )
 
 func MD5String(s string) string {
@@ -24,3 +25,6 @@ func MD5File(filename string) (string, error) {
 	}
 	return MD5Bytes(data), nil
 }
+
+//go:linkname Slot github.com/go-redis/redis/internal/hashtag.Slot
+func Slot(key string) int

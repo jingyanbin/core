@@ -1,5 +1,7 @@
 package filequeue
 
+import "github.com/jingyanbin/core/internal"
+
 type FileQueue struct {
 	pusher *FileQueuePusher
 	popper *FileQueuePopper
@@ -48,5 +50,6 @@ func NewFileQueue(options *Options) (*FileQueue, error) {
 	} else {
 		q.popper = popper
 	}
+	log.InfoF("NewFileQueue %s", internal.Path.ProgramDirJoin(options.ConfDataDir, options.Name))
 	return q, nil
 }
