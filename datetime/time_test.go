@@ -2,7 +2,7 @@ package datetime
 
 import "testing"
 import "time"
-import "github.com/jingyanbin/timezone"
+import "github.com/jingyanbin/core/timezone"
 
 //go test -bench="." -count 5
 //func BenchmarkUnix1(b *testing.B) {
