@@ -13,7 +13,6 @@ func SetLogger(logger internal.ILogger) {
 	log = logger
 }
 
-const defaultEpoch = 1577808000000 //北京时间 2020-01-01 00:00:00.000
 const backTime = time.Second
 
 type Option struct {
@@ -25,38 +24,37 @@ type Option struct {
 	TimeLatest   bool  //使用最新时间
 	WorkerId     int64 //进程ID
 	BccSeed      uint8 //bcc校验种子
-	Fast         bool  //快速模式,使用原子操作
-
 	//计算的参数-------------
-	//Shift
+	//shift
 	workerIdShift int64
 	timeShift     int64
-	//max
+	//max, min
 	indexMax     int64
 	workerIdMax  int64
 	timeValueMax int64
 	timeValueMin int64
-	//date time
+	//date time str
 	dateTimeMax string
 	dateTimeMin string
 }
 
 func (m *Option) init() {
 	if m.IndexBits < 1 {
-		panic(internal.NewError("uuid option IndexBits less: 1, %d", m.IndexBits))
+		panic(internal.NewError("uuid option IndexBits less 1: %d", m.IndexBits))
 	}
 	if m.WorkerIdBits < 1 {
-		panic(internal.NewError("uuid option WorkerIdBits less: 1, %d", m.WorkerIdBits))
+		panic(internal.NewError("uuid option WorkerIdBits less 1: %d", m.WorkerIdBits))
 	}
 	if m.TimeBits < 1 {
-		panic(internal.NewError("uuid option TimeBits less: 1, %d", m.TimeBits))
+		panic(internal.NewError("uuid option TimeBits less 1: %d", m.TimeBits))
 	}
 	if totalBits := m.IndexBits + m.WorkerIdBits + m.TimeBits; totalBits > 63 {
 		panic(internal.NewError("uuid option total bits more: %d/63", totalBits))
 	}
 	if m.Epoch < 1 {
-		m.Epoch = defaultEpoch
+		panic(internal.NewError("uuid option Epoch less 1: %d", m.Epoch))
 	}
+
 	m.workerIdShift = m.IndexBits
 	m.timeShift = m.IndexBits + m.WorkerIdBits
 	//

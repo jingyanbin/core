@@ -116,19 +116,57 @@ func (m *Generator) DeUUID(uuid int64) (ms, workerId, index int64) {
 	return
 }
 
-func (m *Generator) ToHex(uuid int64) string {
+func (m *Generator) DeUUIDStr(uuidStr string) (ms, workerId, index int64, err error) {
+	var uuid int
+	uuid, err = strconv.Atoi(uuidStr)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	ms, workerId, index = m.DeUUID(int64(uuid))
+	return
+}
+
+func (m *Generator) DeUUIDHex(uuidHex string) (ms, workerId, index int64, err error) {
+	var uuid int64
+	uuid, err = m.ToUUID(uuidHex)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	ms, workerId, index = m.DeUUID(uuid)
+	return
+}
+
+func (m *Generator) DeUUIDHexEx(uuidHexEx string) (ms, workerId, index int64, ex []byte, err error) {
+	var data []byte
+	data, err = hex.DecodeString(uuidHexEx)
+	if err != nil {
+		return
+	}
+	bcc := m.bcc(data, 0, len(data)-1)
+	if bcc != data[len(data)-1] {
+		err = internal.NewError("uuid hex ex decode bcc check failed")
+		return
+	}
+	uuid := int64(binary.BigEndian.Uint64(data[0:]))
+	ms, workerId, index = m.DeUUID(uuid)
+	ex = data[8 : len(data)-1]
+	return
+}
+
+func (m *Generator) ToHex(uuid int64) (uuidHex string) {
 	data := make([]byte, 8)
 	binary.BigEndian.PutUint64(data[0:], uint64(uuid))
 	return strings.ToUpper(hex.EncodeToString(data))
 }
 
-func (m *Generator) ToUUID(uuidHex string) (int64, error) {
-	data, err := hex.DecodeString(uuidHex)
+func (m *Generator) ToUUID(uuidHex string) (uuid int64, err error) {
+	var data []byte
+	data, err = hex.DecodeString(uuidHex)
 	if err != nil {
 		return 0, err
 	}
 	if len(data) != 16 {
-		return 0, internal.NewError("s len error: %v", len(data))
+		return 0, internal.NewError("uuidHex len error: %v", len(data))
 	}
 	return int64(binary.BigEndian.Uint64(data)), nil
 }
@@ -139,22 +177,4 @@ func (m *Generator) bcc(buf []byte, offset int, length int) byte {
 		value ^= buf[i]
 	}
 	return value
-}
-
-func (m *Generator) DeUUIDHexEx(uuidHexEx string) (ms, workerId, index int64, ex []byte, err error) {
-	var data []byte
-	data, err = hex.DecodeString(uuidHexEx)
-	if err != nil {
-		return
-	}
-
-	bcc := m.bcc(data, 0, len(data)-1)
-	if bcc != data[len(data)-1] {
-		err = internal.NewError("uuid hex ex decode bcc check failed")
-		return
-	}
-	uuid := int64(binary.BigEndian.Uint64(data[0:]))
-	ms, workerId, index = m.DeUUID(uuid)
-	ex = data[8 : len(data)-1]
-	return
 }
