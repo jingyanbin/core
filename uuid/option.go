@@ -82,6 +82,7 @@ func (m *Option) init() {
 }
 
 func (m *Option) info() string {
-	nYear := m.timeValueMax / (3600 * 24 * 366 * 1000)
-	return internal.Sprintf("uuid option index max: %d, worker id max: %d, time range: %s, %s, nYear: %d", m.indexMax, m.workerIdMax, m.dateTimeMin, m.dateTimeMax, nYear)
+	nYear := (m.timeValueMax - m.timeValueMin) / (3600 * 24 * 365 * 1000)
+	remain := (m.timeValueMax + m.Epoch - datetime.UnixMs()) / (3600 * 24 * 365 * 1000)
+	return internal.Sprintf("uuid option index max: %d, worker id max: %d, time range: %s, %s, nYear: %d, remain: %d", m.indexMax, m.workerIdMax, m.dateTimeMin, m.dateTimeMax, nYear, remain)
 }
