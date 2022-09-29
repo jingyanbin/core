@@ -59,8 +59,8 @@ func (m *FastGenerator) genUUID() int64 {
 		}
 		if unixMsNow < unixMsOld {
 			interval := time.Duration(unixMsOld-unixMsNow) * time.Millisecond
-			if interval > time.Second {
-				log.ErrorF("uuid back in time: %s", datetime.UnixToYmdHMS(unixMsOld/1000, tz.Local()))
+			if interval > time.Second { //时间回拨超过1秒 一般
+				log.ErrorF("uuid back in time: %s, sleep: %vms", datetime.UnixToYmdHMS(unixMsOld/1000, tz.Local()), interval.Milliseconds())
 			}
 			time.Sleep(interval)
 		} else {
@@ -88,8 +88,8 @@ func (m *FastGenerator) genUUIDLast() int64 {
 		unixMsNow = datetime.UnixMs()
 		if unixMsNow < unixMsOld {
 			interval := time.Duration(unixMsOld-unixMsNow) * time.Millisecond
-			if interval > time.Second {
-				log.ErrorF("uuid back in time: %s", datetime.UnixToYmdHMS(unixMsOld/1000, tz.Local()))
+			if interval > time.Second { //时间回拨超过1秒 一般
+				log.ErrorF("uuid back in time: %s, sleep: %vms", datetime.UnixToYmdHMS(unixMsOld/1000, tz.Local()), interval.Milliseconds())
 			}
 			time.Sleep(interval)
 		} else if unixMsNow == unixMsOld { //时间一样
