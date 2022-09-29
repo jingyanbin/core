@@ -75,15 +75,15 @@ func (m *Generator) getTimeIndexLatest() (int64, int64) {
 }
 
 func (m *Generator) UUID() int64 {
-	var ms, index int64
+	var unixMs, index int64
 	if m.opt.TimeLatest {
-		ms, index = m.getTimeIndexLatest()
+		unixMs, index = m.getTimeIndexLatest()
 	} else {
-		ms, index = m.getTimeIndex()
+		unixMs, index = m.getTimeIndex()
 	}
-	timeValue := ms - m.opt.Epoch
+	timeValue := unixMs - m.opt.Epoch
 	if timeValue > m.opt.timeValueMax || timeValue < m.opt.timeValueMin {
-		panic(internal.NewError("uuid timeValue out of range: %s~%s, %s", m.opt.dateTimeMin, m.opt.dateTimeMax, datetime.UnixToYmdHMS(ms/1000, tz.Local())))
+		panic(internal.NewError("uuid timeValue out of range: %s~%s, %s", m.opt.dateTimeMin, m.opt.dateTimeMax, datetime.UnixToYmdHMS(unixMs/1000, tz.Local())))
 	}
 	return timeValue<<m.opt.timeShift | m.opt.WorkerId<<m.opt.workerIdShift | index
 }

@@ -17,10 +17,10 @@ type IGenerator interface {
 	UUIDStr() string
 	UUIDHex() string
 	UUIDHexEx(ex ...byte) string
-	DeUUID(uuid int64) (ms, workerId, index int64)
-	DeUUIDStr(uuidStr string) (ms, workerId, index int64, err error)
-	DeUUIDHex(uuidHex string) (ms, workerId, index int64, err error)
-	DeUUIDHexEx(uuidHexEx string) (ms, workerId, index int64, ex []byte, err error)
+	DeUUID(uuid int64) (unixMs, workerId, index int64)
+	DeUUIDStr(uuidStr string) (unixMs, workerId, index int64, err error)
+	DeUUIDHex(uuidHex string) (unixMs, workerId, index int64, err error)
+	DeUUIDHexEx(uuidHexEx string) (unixMs, workerId, index int64, ex []byte, err error)
 	ToUUID(uuidHex string) (uuid int64, err error)
 	ToHex(uuid int64) (uuidHex string)
 }
@@ -38,8 +38,8 @@ func NewFastGenerator(opt Option) *FastGenerator {
 }
 
 func (m *FastGenerator) init() {
-	ms := datetime.UnixMs()
-	timeValue := ms - m.opt.Epoch
+	unixMs := datetime.UnixMs()
+	timeValue := unixMs - m.opt.Epoch
 	m.uuid = (timeValue << m.opt.timeShift) | (m.opt.WorkerId << m.opt.workerIdShift) | 0
 }
 
@@ -48,25 +48,25 @@ func (m *FastGenerator) Info() string {
 }
 
 func (m *FastGenerator) genUUID() int64 {
-	var uuid, msOld, msNow, index int64
+	var uuid, unixMsOld, unixMsNow, index int64
 	for {
 		uuid = atomic.LoadInt64(&m.uuid)
-		msOld = (uuid >> m.opt.timeShift) + m.opt.Epoch
-		msNow = datetime.UnixMs()
+		unixMsOld = (uuid >> m.opt.timeShift) + m.opt.Epoch
+		unixMsNow = datetime.UnixMs()
 		index = ((uuid & m.opt.indexMax) + 1) & m.opt.indexMax
 		if index == 0 {
-			msOld = msOld + 1
+			unixMsOld = unixMsOld + 1
 		}
-		if msNow < msOld {
-			interval := time.Duration(msOld-msNow) * time.Millisecond
+		if unixMsNow < unixMsOld {
+			interval := time.Duration(unixMsOld-unixMsNow) * time.Millisecond
 			if interval > time.Second {
-				log.ErrorF("uuid back in time: %s", datetime.UnixToYmdHMS(msOld/1000, tz.Local()))
+				log.ErrorF("uuid back in time: %s", datetime.UnixToYmdHMS(unixMsOld/1000, tz.Local()))
 			}
 			time.Sleep(interval)
 		} else {
-			timeValue := msOld - m.opt.Epoch
+			timeValue := unixMsOld - m.opt.Epoch
 			if timeValue > m.opt.timeValueMax || timeValue < m.opt.timeValueMin {
-				log.ErrorF("uuid timeValue out of range: %s~%s, %s", m.opt.dateTimeMin, m.opt.dateTimeMax, datetime.UnixToYmdHMS(msNow/1000, tz.Local()))
+				log.ErrorF("uuid timeValue out of range: %s~%s, %s", m.opt.dateTimeMin, m.opt.dateTimeMax, datetime.UnixToYmdHMS(unixMsNow/1000, tz.Local()))
 				time.Sleep(time.Second)
 				continue
 			}
@@ -81,22 +81,22 @@ func (m *FastGenerator) genUUID() int64 {
 }
 
 func (m *FastGenerator) genUUIDLast() int64 {
-	var uuid, msOld, msNow, index int64
+	var uuid, unixMsOld, unixMsNow, index int64
 	for {
 		uuid = atomic.LoadInt64(&m.uuid)
-		msOld = (uuid >> m.opt.timeShift) + m.opt.Epoch
-		msNow = datetime.UnixMs()
-		if msNow < msOld {
-			interval := time.Duration(msOld-msNow) * time.Millisecond
+		unixMsOld = (uuid >> m.opt.timeShift) + m.opt.Epoch
+		unixMsNow = datetime.UnixMs()
+		if unixMsNow < unixMsOld {
+			interval := time.Duration(unixMsOld-unixMsNow) * time.Millisecond
 			if interval > time.Second {
-				log.ErrorF("uuid back in time: %s", datetime.UnixToYmdHMS(msOld/1000, tz.Local()))
+				log.ErrorF("uuid back in time: %s", datetime.UnixToYmdHMS(unixMsOld/1000, tz.Local()))
 			}
 			time.Sleep(interval)
-		} else if msNow == msOld { //时间一样
+		} else if unixMsNow == unixMsOld { //时间一样
 			index = ((uuid & m.opt.indexMax) + 1) & m.opt.indexMax
-			timeValue := msNow - m.opt.Epoch
+			timeValue := unixMsNow - m.opt.Epoch
 			if timeValue > m.opt.timeValueMax || timeValue < m.opt.timeValueMin {
-				log.ErrorF("uuid timeValue out of range: %s~%s, %s", m.opt.dateTimeMin, m.opt.dateTimeMax, datetime.UnixToYmdHMS(msNow/1000, tz.Local()))
+				log.ErrorF("uuid timeValue out of range: %s~%s, %s", m.opt.dateTimeMin, m.opt.dateTimeMax, datetime.UnixToYmdHMS(unixMsNow/1000, tz.Local()))
 				time.Sleep(time.Second)
 				continue
 			}
@@ -107,7 +107,7 @@ func (m *FastGenerator) genUUIDLast() int64 {
 				time.Sleep(time.Millisecond)
 			}
 		} else {
-			timeValue := msNow - m.opt.Epoch
+			timeValue := unixMsNow - m.opt.Epoch
 			uuidNow := timeValue<<m.opt.timeShift | m.opt.WorkerId<<m.opt.workerIdShift | 0
 			if atomic.CompareAndSwapInt64(&m.uuid, uuid, uuidNow) {
 				return uuidNow
@@ -147,34 +147,34 @@ func (m *FastGenerator) UUIDHexEx(ex ...byte) string {
 	return uuid
 }
 
-func (m *FastGenerator) DeUUID(uuid int64) (ms, workerId, index int64) {
-	ms = (uuid >> m.opt.timeShift) + m.opt.Epoch
+func (m *FastGenerator) DeUUID(uuid int64) (unixMs, workerId, index int64) {
+	unixMs = (uuid >> m.opt.timeShift) + m.opt.Epoch
 	workerId = (uuid >> m.opt.workerIdShift) & m.opt.workerIdMax
 	index = uuid & m.opt.indexMax
 	return
 }
 
-func (m *FastGenerator) DeUUIDStr(uuidStr string) (ms, workerId, index int64, err error) {
+func (m *FastGenerator) DeUUIDStr(uuidStr string) (unixMs, workerId, index int64, err error) {
 	var uuid int
 	uuid, err = strconv.Atoi(uuidStr)
 	if err != nil {
 		return 0, 0, 0, err
 	}
-	ms, workerId, index = m.DeUUID(int64(uuid))
+	unixMs, workerId, index = m.DeUUID(int64(uuid))
 	return
 }
 
-func (m *FastGenerator) DeUUIDHex(uuidHex string) (ms, workerId, index int64, err error) {
+func (m *FastGenerator) DeUUIDHex(uuidHex string) (unixMs, workerId, index int64, err error) {
 	var uuid int64
 	uuid, err = m.ToUUID(uuidHex)
 	if err != nil {
 		return 0, 0, 0, err
 	}
-	ms, workerId, index = m.DeUUID(uuid)
+	unixMs, workerId, index = m.DeUUID(uuid)
 	return
 }
 
-func (m *FastGenerator) DeUUIDHexEx(uuidHexEx string) (ms, workerId, index int64, ex []byte, err error) {
+func (m *FastGenerator) DeUUIDHexEx(uuidHexEx string) (unixMs, workerId, index int64, ex []byte, err error) {
 	var data []byte
 	data, err = hex.DecodeString(uuidHexEx)
 	if err != nil {
@@ -186,7 +186,7 @@ func (m *FastGenerator) DeUUIDHexEx(uuidHexEx string) (ms, workerId, index int64
 		return
 	}
 	uuid := int64(binary.BigEndian.Uint64(data[0:]))
-	ms, workerId, index = m.DeUUID(uuid)
+	unixMs, workerId, index = m.DeUUID(uuid)
 	ex = data[8 : len(data)-1]
 	return
 }
