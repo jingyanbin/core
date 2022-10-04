@@ -38,7 +38,7 @@ func (m *Generator) getTimeIndex() (int64, int64) {
 	}
 	for nowTime < m.lastTime {
 		interval := time.Duration(m.lastTime-nowTime) * time.Millisecond
-		if backTime < interval { //时间回拨超过1秒 一般
+		if interval > backTime { //时间回拨超过1秒 一般
 			log.ErrorF("uuid back in time: %s, sleep: %vms", datetime.UnixToYmdHMS(m.lastTime/1000, tz.Local()), interval.Milliseconds())
 		}
 		time.Sleep(interval)
@@ -54,7 +54,7 @@ func (m *Generator) getTimeIndexLatest() (int64, int64) {
 	nowTime := datetime.UnixMs()
 	for nowTime < m.lastTime {
 		interval := time.Duration(m.lastTime-nowTime) * time.Millisecond
-		if backTime < interval { //时间回拨超过1秒 一般
+		if interval > backTime { //时间回拨超过1秒 一般
 			log.ErrorF("uuid back in time: %s, sleep: %vms", datetime.UnixToYmdHMS(m.lastTime/1000, tz.Local()), interval.Milliseconds())
 		}
 		time.Sleep(interval)
