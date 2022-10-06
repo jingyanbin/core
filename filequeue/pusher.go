@@ -16,6 +16,15 @@ type FileQueuePusher struct {
 	closed int32            //关闭状态
 	wg     sync.WaitGroup   //关闭等待组
 	f      *os.File         //当前写入文件
+	count  int64            //当前写入条数
+}
+
+func (m *FileQueuePusher) ChanLenAndSize() (int, int) {
+	return len(m.ch), m.conf.option.PushChanSize
+}
+
+func (m *FileQueuePusher) Count() int64 {
+	return m.count
 }
 
 // 当前大小
@@ -51,7 +60,7 @@ func (m *FileQueuePusher) reopen(force bool) error {
 			m.f.Sync()
 			m.f.Close()
 		}
-		f, err := internal.OpenFileB(m.conf.options.getMsgFileName(m.conf.index), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		f, err := internal.OpenFileB(m.conf.option.getMsgFileName(m.conf.index), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			m.f = nil
 			return err
@@ -66,7 +75,7 @@ func (m *FileQueuePusher) push(data []byte) (err error) {
 	if size, err = m.size(); err != nil {
 		return err
 	}
-	if m.conf.options.MsgFileMaxByte > 0 && size > m.conf.options.MsgFileMaxByte {
+	if m.conf.option.MsgFileMaxByte > 0 && size > m.conf.option.MsgFileMaxByte {
 		if _, err = m.write([]byte{msgEOF}); err != nil { //类型为27是文件结束符
 			return err
 		}
@@ -119,7 +128,12 @@ func (m *FileQueuePusher) run() {
 		if err != nil {
 			log.ErrorF("FileQueuePusher run push error: %v, data: %v", err, string(data))
 		}
+		m.count += 1
 	}
+}
+
+func (m *FileQueuePusher) Closed() bool {
+	return atomic.LoadInt32(&m.closed) == 1
 }
 
 func (m *FileQueuePusher) Close() {
@@ -138,7 +152,7 @@ func (m *FileQueuePusher) Push(data []byte) (err error) {
 	defer basal.Exception(func(stack string, e error) {
 		err = e
 	})
-	//if pushLen := len(m.ch); pushLen >= m.conf.pushChanSize {
+	//if pushLen := len(m.ch); pushLen >= m.conf.options.PushChanSize-5 {
 	//	log.ErrorF("FileQueue Push full: %d", pushLen)
 	//}
 	m.ch <- data
@@ -149,19 +163,15 @@ func (m *FileQueuePusher) PushString(data string) error {
 	return m.Push([]byte(data))
 }
 
-func NewFileQueuePusher(options *Options) (*FileQueuePusher, error) {
-	if options == nil {
-		options = &Options{}
-	}
-	options.init()
+func newFileQueuePusher(option Option) (*FileQueuePusher, error) {
 	pusher := &FileQueuePusher{}
-	pusher.conf.options = options
-	pusher.conf.filename = options.getConfFileName("push")
+	pusher.conf.option = option
+	pusher.conf.filename = option.getConfFileName("push")
 	err := pusher.conf.Load()
 	if err != nil {
 		return nil, err
 	}
-	pusher.ch = make(chan []byte, options.PushChanSize)
+	pusher.ch = make(chan []byte, option.PushChanSize)
 	pusher.wg.Add(1)
 	go pusher.run()
 	return pusher, nil

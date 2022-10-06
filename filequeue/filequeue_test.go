@@ -5,12 +5,12 @@ import (
 )
 
 func BenchmarkFileQueue(b *testing.B) {
-	opt := &Options{
+	opt := Option{
 		MsgFileMaxByte:   MBToByteCount(1),
 		PushChanSize:     1000,
 		DeletePoppedFile: true,
 	}
-	q, err := NewFileQueue(opt)
+	q, err := NewFileQueue(opt, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -21,13 +21,12 @@ func BenchmarkFileQueue(b *testing.B) {
 }
 
 func BenchmarkFileQueuePop(b *testing.B) {
-	opt := &Options{
+	opt := Option{
 		MsgFileMaxByte:   MBToByteCount(1),
 		PushChanSize:     1000,
 		DeletePoppedFile: true,
-		ReadCount:        false,
 	}
-	q, err := NewFileQueue(opt)
+	q, err := NewFileQueue(opt, nil)
 	if err != nil {
 		panic(err)
 	}

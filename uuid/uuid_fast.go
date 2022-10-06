@@ -23,6 +23,15 @@ type IGenerator interface {
 	DeUUIDHexEx(uuidHexEx string) (unixMs, workerId, index int64, ex []byte, err error)
 	ToUUID(uuidHex string) (uuid int64, err error)
 	ToHex(uuid int64) (uuidHex string)
+	Info() string
+}
+
+func NewIGenerator(opt Option, fast bool) IGenerator {
+	if fast {
+		return NewFastGenerator(opt)
+	} else {
+		return NewGenerator(opt)
+	}
 }
 
 type FastGenerator struct {

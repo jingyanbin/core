@@ -128,7 +128,7 @@ func (m *configDataBase) Save(clear bool, nums ...int64) (err error) {
 
 //pusher 配置
 type configDataPusher struct {
-	options *Options
+	option Option
 	configDataBase
 	//数据
 	index int64 //push 消息文件的index
@@ -163,7 +163,7 @@ func (m *configDataPusher) Save() error {
 
 //popper配置
 type configDataPopper struct {
-	options *Options
+	option Option
 	configDataBase
 	//数据
 	index  int64 //pop 消息文件的index

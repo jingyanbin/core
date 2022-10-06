@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/jingyanbin/core/internal"
 	"math"
 	"reflect"
 	"strconv"
-	"sync"
-	"sync/atomic"
 	"unsafe"
 )
 
@@ -478,41 +477,6 @@ func AddRemainInt32(oldNum, addNum, numMax int32) (newNum int32, added int32, re
 	return oldNum + addNum, addNum, 0
 }
 
-type OnceSuccess struct {
-	m    sync.Mutex
-	done uint32
-}
+type OnceSuccess = internal.OnceSuccess
 
-func (once *OnceSuccess) Success() bool {
-	return atomic.LoadUint32(&once.done) == 1
-}
-
-func (once *OnceSuccess) Do(f func() bool) bool {
-	if atomic.LoadUint32(&once.done) == 1 {
-		return true
-	}
-	once.m.Lock()
-	defer once.m.Unlock()
-	if once.done == 0 {
-		if !f() {
-			return false
-		}
-		atomic.StoreUint32(&once.done, 1)
-	}
-	return true
-}
-
-func (once *OnceSuccess) DoError(f func() error) error {
-	if atomic.LoadUint32(&once.done) == 1 {
-		return nil
-	}
-	once.m.Lock()
-	defer once.m.Unlock()
-	if once.done == 0 {
-		if err := f(); err != nil {
-			return err
-		}
-		atomic.StoreUint32(&once.done, 1)
-	}
-	return nil
-}
+type Waiter = internal.Waiter

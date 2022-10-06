@@ -26,6 +26,11 @@ type FileQueuePopper struct {
 	closed     int32
 	wg         sync.WaitGroup
 	mu         sync.Mutex
+	count      int64 //当前出队成功数
+}
+
+func (m *FileQueuePopper) Count() int64 {
+	return m.count
 }
 
 func (m *FileQueuePopper) CurOffset() (int64, error) {
@@ -98,8 +103,8 @@ func (m *FileQueuePopper) read() (int64, []byte, error) {
 }
 
 func (m *FileQueuePopper) deleteMsgFile(index int64) {
-	if m.conf.options.DeletePoppedFile {
-		filename := m.conf.options.getMsgFileName(index)
+	if m.conf.option.DeletePoppedFile {
+		filename := m.conf.option.getMsgFileName(index)
 		os.Remove(filename)
 	}
 }
@@ -112,7 +117,7 @@ func (m *FileQueuePopper) closeFile() {
 }
 
 func (m *FileQueuePopper) isExistNext() bool {
-	filename := m.conf.options.getMsgFileName(m.conf.index + 1)
+	filename := m.conf.option.getMsgFileName(m.conf.index + 1)
 	has, err := internal.IsExist(filename)
 	if err != nil {
 		log.ErrorF("FileQueuePopper isExistNext error: %v, %v", err, filename)
@@ -124,7 +129,7 @@ func (m *FileQueuePopper) isExistNext() bool {
 func (m *FileQueuePopper) openNext() error {
 	index := m.conf.index         //当前文件的编号
 	nextIndex := m.conf.index + 1 //下一个文件编号
-	f, err := basal.OpenFileB(m.conf.options.getMsgFileName(nextIndex), os.O_RDONLY, 0666)
+	f, err := basal.OpenFileB(m.conf.option.getMsgFileName(nextIndex), os.O_RDONLY, 0666)
 	if err != nil {
 		return err
 	}
@@ -138,7 +143,7 @@ func (m *FileQueuePopper) openNext() error {
 
 func (m *FileQueuePopper) reopen(force bool) error {
 	if m.f == nil || force {
-		filename := m.conf.options.getMsgFileName(m.conf.index)
+		filename := m.conf.option.getMsgFileName(m.conf.index)
 		has, err := basal.IsExist(filename)
 		if err != nil {
 			log.ErrorF("FileQueuePopper reopen error: %v", err)
@@ -147,7 +152,7 @@ func (m *FileQueuePopper) reopen(force bool) error {
 			return io.EOF
 		}
 		m.closeFile()
-		f, err := basal.OpenFileB(m.conf.options.getMsgFileName(m.conf.index), os.O_RDONLY, 0666)
+		f, err := basal.OpenFileB(m.conf.option.getMsgFileName(m.conf.index), os.O_RDONLY, 0666)
 		if err != nil {
 			return err
 		}
@@ -180,6 +185,7 @@ func (m *FileQueuePopper) Offset() int64 {
 // 丢弃队头数据 必须调用过 Front 有数据才能丢弃
 func (m *FileQueuePopper) DiscardFront() (bool, error) {
 	if m.lastData != nil {
+		m.count += 1
 		m.lastData = nil
 		m.nextFile = false
 		m.conf.offset = m.lastOffset
@@ -304,6 +310,10 @@ func (m *FileQueuePopper) popTo(handler PopHandler) {
 	}
 }
 
+func (m *FileQueuePopper) Closed() bool {
+	return atomic.LoadInt32(&m.closed) == 1
+}
+
 func (m *FileQueuePopper) Close() {
 	atomic.CompareAndSwapInt32(&m.closed, 0, 1)
 	m.Wait()
@@ -314,14 +324,10 @@ func (m *FileQueuePopper) Wait() {
 	m.wg.Wait()
 }
 
-func NewFileQueuePopper(options *Options) (*FileQueuePopper, error) {
-	if options == nil {
-		options = &Options{}
-	}
-	options.init()
+func newFileQueuePopper(option Option) (*FileQueuePopper, error) {
 	popper := &FileQueuePopper{}
-	popper.conf.options = options
-	popper.conf.filename = options.getConfFileName("pop")
+	popper.conf.option = option
+	popper.conf.filename = option.getConfFileName("pop")
 	err := popper.conf.Load()
 	if err != nil {
 		return nil, err
