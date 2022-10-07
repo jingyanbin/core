@@ -15,7 +15,8 @@ func SetLogger(logger internal.ILogger) {
 	log = logger
 }
 
-const msgEOF byte = 27      //文件结束符
+const msgEOF byte = 27 //文件结束符
+
 const byteMB1 = 1024 * 1024 //1MB
 
 func MBToByteCount(mb int64) int64 {
@@ -88,7 +89,7 @@ func (m *configDataBase) Load(numCount int) ([]int64, error) {
 		}
 		return result, nil
 	} else {
-		return nil, internal.NewError("load config file num len error: %v", string(data))
+		return nil, internal.NewError("load config file error num len != %d file: %v, data: %v", numCount, m.filename, string(data))
 	}
 }
 
@@ -128,28 +129,35 @@ func (m *configDataBase) Save(clear bool, nums ...int64) (err error) {
 
 //pusher 配置
 type configDataPusher struct {
-	option Option
+	option *Option
 	configDataBase
 	//数据
 	index int64 //push 消息文件的index
+	count int64 //当前写入条数
 }
 
 func (m *configDataPusher) Next() error {
 	index := m.index + 1
-	err := m.configDataBase.Save(false, index)
+	err := m.configDataBase.Save(false, index, m.count)
 	if err == nil {
 		m.index = index
 	}
 	return err
 }
 
+func (m *configDataPusher) AddCount(num int64) {
+	m.count += num
+	m.Save()
+}
+
 func (m *configDataPusher) Load() error {
-	nums, err := m.configDataBase.Load(1)
+	nums, err := m.configDataBase.Load(2)
 	if err != nil {
 		return err
 	}
-	if len(nums) >= 1 {
+	if len(nums) >= 2 {
 		m.index = nums[0]
+		m.count = nums[1]
 		return nil
 	} else {
 		m.Save()
@@ -158,26 +166,28 @@ func (m *configDataPusher) Load() error {
 }
 
 func (m *configDataPusher) Save() error {
-	return m.configDataBase.Save(false, m.index)
+	return m.configDataBase.Save(false, m.index, m.count)
 }
 
 //popper配置
 type configDataPopper struct {
-	option Option
+	option *Option
 	configDataBase
 	//数据
 	index  int64 //pop 消息文件的index
 	offset int64 //pop 消息文件内容偏移量
+	count  int64 //pop 出队消息数
 }
 
 func (m *configDataPopper) Load() error {
-	nums, err := m.configDataBase.Load(2)
+	nums, err := m.configDataBase.Load(3)
 	if err != nil {
 		return err
 	}
 	if len(nums) >= 2 {
 		m.index = nums[0]
 		m.offset = nums[1]
+		m.count = nums[2]
 		return nil
 	} else {
 		m.Save()
@@ -186,14 +196,14 @@ func (m *configDataPopper) Load() error {
 }
 
 func (m *configDataPopper) Save() error {
-	if err := m.configDataBase.Save(false, m.index, m.offset); err != nil {
+	if err := m.configDataBase.Save(false, m.index, m.offset, m.count); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (m *configDataPopper) SaveEx(index, offset int64) error {
-	if err := m.configDataBase.Save(true, index, offset); err != nil {
+	if err := m.configDataBase.Save(true, index, offset, m.count); err != nil {
 		return err
 	}
 	m.index = index

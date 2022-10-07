@@ -17,7 +17,7 @@ import (
 type PopHandler func(data []byte) (popped bool, exit bool)
 
 // 文件队列弹出器
-type FileQueuePopper struct {
+type fileQueuePopper struct {
 	conf       configDataPopper //配置数据
 	f          *os.File         //队列数文件
 	lastData   []byte
@@ -26,18 +26,17 @@ type FileQueuePopper struct {
 	closed     int32
 	wg         sync.WaitGroup
 	mu         sync.Mutex
-	count      int64 //当前出队成功数
 }
 
-func (m *FileQueuePopper) Count() int64 {
-	return m.count
+func (m *fileQueuePopper) Count() int64 {
+	return m.conf.count
 }
 
-func (m *FileQueuePopper) CurOffset() (int64, error) {
+func (m *fileQueuePopper) CurOffset() (int64, error) {
 	return m.f.Seek(0, io.SeekCurrent)
 }
 
-func (m *FileQueuePopper) read() (int64, []byte, error) {
+func (m *fileQueuePopper) read() (int64, []byte, error) {
 	if m.nextFile {
 		if !m.isExistNext() {
 			return 0, nil, io.EOF //下一个文件不存在, 表示本文件读到EOF
@@ -102,21 +101,21 @@ func (m *FileQueuePopper) read() (int64, []byte, error) {
 	return offset, data, nil
 }
 
-func (m *FileQueuePopper) deleteMsgFile(index int64) {
+func (m *fileQueuePopper) deleteMsgFile(index int64) {
 	if m.conf.option.DeletePoppedFile {
 		filename := m.conf.option.getMsgFileName(index)
 		os.Remove(filename)
 	}
 }
 
-func (m *FileQueuePopper) closeFile() {
+func (m *fileQueuePopper) closeFile() {
 	if m.f != nil {
 		m.f.Close()
 		m.f = nil
 	}
 }
 
-func (m *FileQueuePopper) isExistNext() bool {
+func (m *fileQueuePopper) isExistNext() bool {
 	filename := m.conf.option.getMsgFileName(m.conf.index + 1)
 	has, err := internal.IsExist(filename)
 	if err != nil {
@@ -126,7 +125,7 @@ func (m *FileQueuePopper) isExistNext() bool {
 	return has
 }
 
-func (m *FileQueuePopper) openNext() error {
+func (m *fileQueuePopper) openNext() error {
 	index := m.conf.index         //当前文件的编号
 	nextIndex := m.conf.index + 1 //下一个文件编号
 	f, err := basal.OpenFileB(m.conf.option.getMsgFileName(nextIndex), os.O_RDONLY, 0666)
@@ -141,7 +140,7 @@ func (m *FileQueuePopper) openNext() error {
 	return m.setFile(f)    //设置新文件
 }
 
-func (m *FileQueuePopper) reopen(force bool) error {
+func (m *fileQueuePopper) reopen(force bool) error {
 	if m.f == nil || force {
 		filename := m.conf.option.getMsgFileName(m.conf.index)
 		has, err := basal.IsExist(filename)
@@ -161,11 +160,11 @@ func (m *FileQueuePopper) reopen(force bool) error {
 	return nil
 }
 
-func (m *FileQueuePopper) openReset() {
+func (m *fileQueuePopper) openReset() {
 	m.nextFile = false
 }
 
-func (m *FileQueuePopper) setFile(f *os.File) error {
+func (m *fileQueuePopper) setFile(f *os.File) error {
 	if _, err := f.Seek(m.conf.offset, io.SeekStart); err != nil {
 		return err
 	}
@@ -178,14 +177,14 @@ func (m *FileQueuePopper) setFile(f *os.File) error {
 }
 
 // 当前偏移量 不是文件偏移量, 这里是成功出队后的偏移量
-func (m *FileQueuePopper) Offset() int64 {
+func (m *fileQueuePopper) Offset() int64 {
 	return m.conf.offset
 }
 
 // 丢弃队头数据 必须调用过 Front 有数据才能丢弃
-func (m *FileQueuePopper) DiscardFront() (bool, error) {
+func (m *fileQueuePopper) DiscardFront() (bool, error) {
 	if m.lastData != nil {
-		m.count += 1
+		m.conf.count += 1
 		m.lastData = nil
 		m.nextFile = false
 		m.conf.offset = m.lastOffset
@@ -195,7 +194,7 @@ func (m *FileQueuePopper) DiscardFront() (bool, error) {
 	return false, nil
 }
 
-func (m *FileQueuePopper) PopFrontBlock() (line []byte, ok bool) {
+func (m *fileQueuePopper) PopFrontBlock() (line []byte, ok bool) {
 	interval := time.Millisecond
 	var err error
 	for atomic.LoadInt32(&m.closed) == 0 {
@@ -218,7 +217,7 @@ func (m *FileQueuePopper) PopFrontBlock() (line []byte, ok bool) {
 }
 
 // 直接弹出队头数据
-func (m *FileQueuePopper) PopFront() (line []byte, err error) {
+func (m *fileQueuePopper) PopFront() (line []byte, err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	msg, err := m.Front()
@@ -241,7 +240,7 @@ type Message struct {
 }
 
 // 获得队头数据
-func (m *FileQueuePopper) Front() ([]byte, error) {
+func (m *fileQueuePopper) Front() ([]byte, error) {
 	if m.lastData != nil {
 		return m.lastData, nil
 	}
@@ -254,12 +253,12 @@ func (m *FileQueuePopper) Front() ([]byte, error) {
 	return data, nil
 }
 
-func (m *FileQueuePopper) PopToHandler(handler PopHandler) {
+func (m *fileQueuePopper) PopToHandler(handler PopHandler) {
 	m.wg.Add(1)
 	go m.popTo(handler)
 }
 
-func (m *FileQueuePopper) exit() {
+func (m *fileQueuePopper) exit() {
 	defer m.wg.Done()
 	m.conf.Sync()
 	m.conf.Close()
@@ -268,7 +267,7 @@ func (m *FileQueuePopper) exit() {
 	}
 }
 
-func (m *FileQueuePopper) popTo(handler PopHandler) {
+func (m *fileQueuePopper) popTo(handler PopHandler) {
 	var interval time.Duration
 	defer m.exit()
 	var exit bool
@@ -310,22 +309,22 @@ func (m *FileQueuePopper) popTo(handler PopHandler) {
 	}
 }
 
-func (m *FileQueuePopper) Closed() bool {
+func (m *fileQueuePopper) Closed() bool {
 	return atomic.LoadInt32(&m.closed) == 1
 }
 
-func (m *FileQueuePopper) Close() {
+func (m *fileQueuePopper) Close() {
 	atomic.CompareAndSwapInt32(&m.closed, 0, 1)
 	m.Wait()
 	return
 }
 
-func (m *FileQueuePopper) Wait() {
+func (m *fileQueuePopper) Wait() {
 	m.wg.Wait()
 }
 
-func newFileQueuePopper(option Option) (*FileQueuePopper, error) {
-	popper := &FileQueuePopper{}
+func newFileQueuePopper(option *Option) (*fileQueuePopper, error) {
+	popper := &fileQueuePopper{}
 	popper.conf.option = option
 	popper.conf.filename = option.getConfFileName("pop")
 	err := popper.conf.Load()

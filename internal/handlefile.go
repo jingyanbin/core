@@ -229,6 +229,10 @@ func (m *fpath) ProgramDirJoin(elem ...string) string {
 	return filepath.Join(elems...)
 }
 
+func (m *fpath) Join(elem ...string) string {
+	return filepath.Join(elem...)
+}
+
 //执行路径组合
 func (m *fpath) ExecDirJoin(elem ...string) string {
 	var elems = make([]string, len(elem)+1)
@@ -242,7 +246,7 @@ func (m *fpath) Dir(p string) string {
 	return filepath.Dir(p)
 }
 
-var Path = &fpath{}
+var Path = fpath{}
 
 func init() {
 	Path.init()
