@@ -355,6 +355,23 @@ func BytesPtrToStr(bs []byte) string {
 	return *(*string)(unsafe.Pointer(&bs))
 }
 
+//字符串中字符前(不存在此字符就加此字符)
+func StrAddBeforeNotHas(s string, old byte, add byte) string {
+	bs := make([]byte, 0, len(s))
+	var preByte, curByte byte
+	for i, c := range s {
+		curByte = byte(c)
+		if i > 0 {
+			if curByte == old && preByte != add {
+				bs = append(bs, add)
+			}
+		}
+		bs = append(bs, curByte)
+		preByte = curByte
+	}
+	return string(bs)
+}
+
 //const UINT64_MIN uint64 = 0
 //const UINT64_MAX uint64 = ^UINT64_MIN
 //const INT64_MIN = ^UINT64_MAX

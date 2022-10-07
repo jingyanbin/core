@@ -192,9 +192,9 @@ func (my *Json) Slice() []interface{} {
 	}
 }
 
-func (my *Json) RangeSliceJson(f func(elem *Json) bool) {
-	for _, v := range my.Slice() {
-		if !f(&Json{v}) {
+func (my *Json) RangeSliceJson(f func(i int, elem *Json) bool) {
+	for i, v := range my.Slice() {
+		if !f(i, &Json{v}) {
 			return
 		}
 	}
