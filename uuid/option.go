@@ -63,8 +63,8 @@ func (m *Option) init() {
 	m.timeValueMax = 1<<m.TimeBits - 1
 	m.timeValueMin = -1 << m.TimeBits
 
-	if m.WorkerId > m.workerIdMax || m.WorkerId < 0 {
-		panic(internal.NewError("uuid option WorkerId out of range: 0~%d, %d", m.workerIdMax, m.WorkerId))
+	if m.WorkerId > m.workerIdMax || m.WorkerId < 1 {
+		panic(internal.NewError("uuid option WorkerId out of range: 1~%d, %d", m.workerIdMax, m.WorkerId))
 	}
 	m.dateTimeMin = datetime.UnixToYmdHMS((m.Epoch+m.timeValueMin)/1000, tz.Local())
 	m.dateTimeMax = datetime.UnixToYmdHMS((m.Epoch+m.timeValueMax)/1000, tz.Local())

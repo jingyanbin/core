@@ -29,7 +29,7 @@ func (m *FileQueue) ClosePopper() {
 func (m *FileQueue) Close() {
 	m.popper.Close()
 	m.pusher.Close()
-	if m.pusher.conf.option.PrintInfoInterval > 0 {
+	if m.pusher.conf.option.PrintInfoSec > 0 {
 		log.InfoF("file queue close info: %s", m.Info())
 	}
 }
@@ -51,8 +51,8 @@ func (m *FileQueue) Pop() (data []byte, ok bool) {
 	return m.popper.PopFrontBlock()
 }
 
-func (m *FileQueue) run(interval time.Duration) {
-	ticker := time.NewTicker(interval)
+func (m *FileQueue) run(nSec int) {
+	ticker := time.NewTicker(time.Duration(nSec) * time.Second)
 	defer ticker.Stop()
 	for !m.pusher.Closed() || !m.popper.Closed() {
 		select {
@@ -62,7 +62,7 @@ func (m *FileQueue) run(interval time.Duration) {
 	}
 }
 
-//创建文件消息队列
+// 创建文件消息队列
 func NewFileQueue(option Option, popHandler PopHandler) (*FileQueue, error) {
 	option.init()
 	q := &FileQueue{option: &option}
@@ -79,8 +79,8 @@ func NewFileQueue(option Option, popHandler PopHandler) (*FileQueue, error) {
 	if popHandler != nil {
 		q.popper.PopToHandler(popHandler)
 	}
-	if option.PrintInfoInterval > 0 {
-		go q.run(option.PrintInfoInterval)
+	if option.PrintInfoSec > 0 {
+		go q.run(option.PrintInfoSec)
 		log.InfoF("file queue new info: %s", q.Info())
 	}
 	return q, nil
