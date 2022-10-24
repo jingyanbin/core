@@ -327,7 +327,7 @@ func Int32ToBool(value int32) bool {
 	return value != 0
 }
 
-//驼峰写法转下划线小写 eg: LevelAbc=>level_abc
+// 驼峰写法转下划线小写 eg: LevelAbc=>level_abc
 func ToLowerLine(s string) string {
 	s2 := make([]byte, 0, len(s)+1)
 	for i, c := range []byte(s) {
@@ -343,31 +343,28 @@ func ToLowerLine(s string) string {
 	return string(s2)
 }
 
-//字符串转bytes 慎修改转换后的值
+// 字符串转bytes 慎修改转换后的值
 func StrPtrToBytes(s string) []byte {
 	p := *(*[2]uintptr)(unsafe.Pointer(&s))
 	p2 := [3]uintptr{p[0], p[1], p[1]}
 	return *(*[]byte)(unsafe.Pointer(&p2))
 }
 
-//bytes转字符串
+// bytes转字符串
 func BytesPtrToStr(bs []byte) string {
 	return *(*string)(unsafe.Pointer(&bs))
 }
 
-//字符串中字符前(不存在此字符就加此字符)
-func StrAddBeforeNotHas(s string, old byte, add byte) string {
-	bs := make([]byte, 0, len(s))
-	var preByte, curByte byte
-	for i, c := range s {
-		curByte = byte(c)
-		if i > 0 {
-			if curByte == old && preByte != add {
-				bs = append(bs, add)
-			}
+// 字符串中字符前(不存在此字符就加此字符) 一般mysql语句拼接使用 eg: old '\”, before add '\\'
+func StrAddBeforeNotHas(s string, old rune, add rune) string {
+	data := []rune(s)
+	bs := make([]rune, 0, len(data))
+	for _, r := range data {
+		if r == old {
+			bs = append(bs, add, old)
+		} else {
+			bs = append(bs, r)
 		}
-		bs = append(bs, curByte)
-		preByte = curByte
 	}
 	return string(bs)
 }
