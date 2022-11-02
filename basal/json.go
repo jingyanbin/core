@@ -3,6 +3,7 @@ package basal
 import (
 	"bytes"
 	"encoding/json"
+	jsoniter "github.com/json-iterator/go"
 	"io/ioutil"
 	"math"
 	"os"
@@ -506,7 +507,7 @@ func LoadJsonFileTo(jsFileName string, toPtr interface{}) error {
 	//if isNil, typ := IsNilPointer(v); isNil {
 	//	return NewError("LoadJsonFileTo IsNilPointer: %s", typ)
 	//}
-	data, err := ioutil.ReadFile(jsFileName)
+	data, err := os.ReadFile(jsFileName)
 	if err != nil {
 		return err
 	}
@@ -514,7 +515,8 @@ func LoadJsonFileTo(jsFileName string, toPtr interface{}) error {
 }
 
 func LoadJsonBytesTo(js []byte, toPtr interface{}) error {
-	dec := json.NewDecoder(bytes.NewBuffer(js))
+	dec := jsoniter.NewDecoder(bytes.NewBuffer(js))
+	//dec := json.NewDecoder(bytes.NewBuffer(js))
 	dec.UseNumber()
 	err := dec.Decode(toPtr)
 	if err != nil {
