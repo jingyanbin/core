@@ -26,7 +26,7 @@ func IsUTF8(buf []byte) bool {
 				}
 				nBytes-- //减掉首字节的一个计数
 			}
-		} else { //处理多字节字符
+		} else {                     //处理多字节字符
 			if buf[i]&0xc0 != 0x80 { //判断多字节后面的字节是否是10开头
 				return false
 			}
@@ -188,19 +188,17 @@ func ToFloat64(value interface{}) (float64, error) {
 	case json.Number:
 		return v.Float64()
 	default:
-		switch value := reflect.ValueOf(v); value.Kind() {
+		switch vf := reflect.ValueOf(v); vf.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			n := value.Int()
-			return float64(n), nil
+			return float64(vf.Int()), nil
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-			n := value.Uint()
-			return float64(n), nil
+			return float64(vf.Uint()), nil
 		case reflect.Float64, reflect.Float32:
-			return value.Float(), nil
+			return vf.Float(), nil
 		case reflect.String:
-			return strconv.ParseFloat(value.String(), 64)
+			return strconv.ParseFloat(vf.String(), 64)
 		case reflect.Slice:
-			return strconv.ParseFloat(string(value.Bytes()), 64)
+			return strconv.ParseFloat(string(vf.Bytes()), 64)
 		}
 	}
 	return 0, NewError("ToFloat64 value type error: %v", Type(value))
@@ -212,62 +210,66 @@ func ToFloat32(value interface{}) (float32, error) {
 }
 
 func ToInt64(value interface{}) (int64, error) {
-	switch n := value.(type) {
+	switch v := value.(type) {
 	case bool:
-		if n {
+		if v {
 			return 1, nil
 		} else {
 			return 0, nil
 		}
 	case int:
-		return int64(n), nil
+		return int64(v), nil
 	case int8:
-		return int64(n), nil
+		return int64(v), nil
 	case int16:
-		return int64(n), nil
+		return int64(v), nil
 	case int32:
-		return int64(n), nil
+		return int64(v), nil
 	case int64:
-		return n, nil
+		return v, nil
 	case uint:
-		return int64(n), nil
+		return int64(v), nil
 	case uint8:
-		return int64(n), nil
+		return int64(v), nil
 	case uint16:
-		return int64(n), nil
+		return int64(v), nil
 	case uint32:
-		return int64(n), nil
+		return int64(v), nil
 	case uint64:
-		return int64(n), nil
+		return int64(v), nil
 	case float64:
-		return int64(n), nil
+		return int64(v), nil
 	case float32:
-		return int64(n), nil
+		return int64(v), nil
 	case string:
-		f, err := strconv.ParseFloat(n, 64)
-		return int64(f), err
+		return AtoInt64(v)
+		//f, err := strconv.ParseFloat(n, 64)
+		//return int64(f), err
 		//return strconv.ParseInt(n, 10, 64)
 	case []byte:
-		f, err := strconv.ParseFloat(string(n), 64)
-		return int64(f), err
+		return AtoInt64(string(v))
+		//f, err := strconv.ParseFloat(string(n), 64)
+		//return int64(f), err
 		//return strconv.ParseInt(string(n), 10, 64)
 	case json.Number:
-		return n.Int64()
+		return v.Int64()
 	default:
-		switch value := reflect.ValueOf(n); value.Kind() {
+		switch vf := reflect.ValueOf(v); vf.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			return value.Int(), nil
+			return vf.Int(), nil
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-			return int64(value.Uint()), nil
+			return int64(vf.Uint()), nil
 		case reflect.Float64, reflect.Float32:
-			return int64(value.Float()), nil
+			return int64(vf.Float()), nil
 		case reflect.String:
-			f, err := strconv.ParseFloat(value.String(), 64)
-			return int64(f), err
+			return AtoInt64(vf.String())
+			//f, err := strconv.ParseFloat(value.String(), 64)
+			//return int64(f), err
 			//return strconv.ParseInt(value.String(), 10, 64)
 		case reflect.Slice:
-			f, err := strconv.ParseFloat(string(value.Bytes()), 64)
-			return int64(f), err
+			return AtoInt64(string(vf.Bytes()))
+			//f, err := strconv.ParseFloat(string(value.Bytes()), 64)
+			//return int64(f), err
 			//return strconv.ParseInt(string(value.Bytes()), 10, 64)
 		}
 	}
@@ -319,11 +321,19 @@ func ToUint(value interface{}) (uint, error) {
 	return uint(v), err
 }
 
-func Int64ToBool(value int64) bool {
-	return value != 0
+type Integer interface {
+	int | int64 | int32 | int16 | int8 | uint | uint64 | uint32 | uint16 | uint8
 }
 
-func Int32ToBool(value int32) bool {
+type Float interface {
+	float32 | float64
+}
+
+type Number interface {
+	Integer | Float
+}
+
+func NumberToBool[T Number](value T) bool {
 	return value != 0
 }
 
@@ -384,41 +394,52 @@ const UINT16_MAX = ^UINT16_MIN
 const INT16_MIN = ^UINT16_MAX
 const INT16_MAX = int16(UINT16_MAX >> 1)
 
-const overfolw63div10 = (1<<63 - 1) / 10
+const overflow63div10 = (1<<63 - 1) / 10
 
+// 有小数的直接忽略
 func AtoInt64(s string) (x int64, err error) {
-	neg := false
 	if s == "" {
-		return 0, NewError("param error: %s", s)
+		return 0, NewError("AtoInt64 error len 0: %s", s)
 	}
-
-	if s[0] == '-' || s[0] == '+' {
-		neg = s[0] == '-'
-		s = s[1:]
-	} else if s[0] < '0' || s[0] > '9' {
-		return 0, NewError("param error: %s", s)
+	neg := false
+	var ns string
+	if s[0] == '-' {
+		neg = true
+		ns = s[1:]
+	} else if s[0] == '+' {
+		ns = s[1:]
+	} else if s[0] >= '0' && s[0] <= '9' {
+		ns = s
+	} else {
+		return 0, NewError("AtoInt64 error head: %s, %c", s, s[0])
 	}
-
 	i := 0
-	for ; i < len(s); i++ {
-		c := s[i]
-		if c < '0' || c > '9' {
-			break
+	for ; i < len(ns); i++ {
+		c := ns[i]
+		if c == '.' {
+			break //遇到小数点结束
+		} else if c < '0' || c > '9' {
+			return 0, NewError("AtoInt641 error not number: %s, %c", s, c)
 		}
-		if x > overfolw63div10 {
+		if x > overflow63div10 {
 			// overflow
-			return 0, NewError("param error: overflow %v", s)
+			return 0, NewError("AtoInt64 error: overflow %v", s)
 		}
 		x = x*10 + int64(c) - '0'
 		if x < 0 {
 			// overflow
-			return 0, NewError("param error: overflow %v", s)
+			return 0, NewError("AtoInt64 error: overflow %v", s)
 		}
 	}
 	if neg {
 		x = -x
 	}
 	return x, nil
+}
+
+func AtoInt32(s string) (int32, error) {
+	x, err := AtoInt64(s)
+	return int32(x), err
 }
 
 func AtoInt(s string) (int, error) {
@@ -441,21 +462,12 @@ func AbsInt16(n int16) int16 {
 	return (n ^ y) - y
 }
 
-func AbsInt(n int) int {
-	if n < 0 {
-		return -n
-	}
-	return n
+func AbsInt8(n int8) int8 {
+	y := n >> 7
+	return (n ^ y) - y
 }
 
-func AbsFloat32(n float32) float32 {
-	if n < 0 {
-		return -n
-	}
-	return n
-}
-
-func AbsFloat64(n float64) float64 {
+func Abs[T Number](n T) T {
 	if n < 0 {
 		return -n
 	}
@@ -467,19 +479,8 @@ func Round(value float64, digit int) float64 {
 	return math.Trunc((value+0.5/p10)*p10) / p10
 }
 
-func AddRemainInt64(oldNum, addNum, numMax int64) (newNum int64, added int64, remained int64) {
-	if addNum < 0 {
-		return oldNum, 0, 0
-	}
-	cha := numMax - oldNum
-	remained = addNum - cha
-	if remained > 0 {
-		return numMax, addNum - remained, remained
-	}
-	return oldNum + addNum, addNum, 0
-}
-
-func AddRemainInt32(oldNum, addNum, numMax int32) (newNum int32, added int32, remained int32) {
+// 添加剩余
+func AddRemain[T Number](oldNum, addNum, numMax T) (newNum, added, remained T) {
 	if addNum < 0 {
 		return oldNum, 0, 0
 	}
