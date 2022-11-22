@@ -37,4 +37,4 @@ var KoreanHJ = RuneRange{'\u1100', '\u11FF'}  //谚文字母
 var KoreanPCL = RuneRange{'\u3130', '\u318F'} //谚文相容字母
 
 // 中日韩
-var CJK_A = RuneRange{'\uFF00', '\uFFEF'} //全角ASCII、全角中英文标点、半宽片假名、半宽平假名、半宽韩文字母
+var CJKA = RuneRange{'\uFF00', '\uFFEF'} //全角ASCII、全角中英文标点、半宽片假名、半宽平假名、半宽韩文字母

@@ -40,7 +40,7 @@ func (m *Waiter) Done() {
 func (m *Waiter) Wait(timeout time.Duration) {
 	m.init.Do(m.toInit)
 	if timeout > 0 {
-		ticker := time.NewTicker(timeout)
+		ticker := time.NewTimer(timeout)
 		defer ticker.Stop()
 		select {
 		case <-m.ch:

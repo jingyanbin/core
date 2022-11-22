@@ -1,82 +1,90 @@
 package basal
 
 import (
-	"container/list"
+	"github.com/jingyanbin/core/internal"
 	"sync"
+	"unsafe"
+	_ "unsafe"
 )
 
-type pair struct {
-	k interface{}
-	v interface{}
+type KVPair[K comparable, V any] struct {
+	Key   K
+	Value V
 }
 
-type LRUCache struct {
+type LRUCache[K comparable, V any] struct {
 	mutex sync.Mutex
 	size  int
-	list  *list.List
-	cache map[interface{}]*list.Element
+	list  *internal.LinkList
+	cache map[K]*internal.LinkListNode
 }
 
-func NewLRUCache(size int) *LRUCache {
-	return &LRUCache{
+func NewLRUCache[K comparable, V any](size int) *LRUCache[K, V] {
+	return &LRUCache[K, V]{
 		size:  size,
-		list:  list.New(),
-		cache: make(map[interface{}]*list.Element),
+		list:  internal.NewLinkList(),
+		cache: make(map[K]*internal.LinkListNode),
 	}
 }
 
-func (my *LRUCache) Get(key interface{}) (interface{}, bool) {
-	my.mutex.Lock()
-	defer my.mutex.Unlock()
-	if elem, ok := my.cache[key]; ok {
-		my.list.MoveToFront(elem)
-		return elem.Value.(*pair).v, true
-	}
-	return nil, false
+func (m *LRUCache[K, V]) Len() int {
+	return m.list.Len()
 }
 
-func (my *LRUCache) Set(key interface{}, value interface{}) {
-	my.mutex.Lock()
-	defer my.mutex.Unlock()
-	if elem, ok := my.cache[key]; ok {
-		my.list.MoveToFront(elem)
-		elem.Value = &pair{k: key, v: value}
-	} else {
-		elemNew := my.list.PushFront(&pair{k: key, v: value})
-		my.cache[key] = elemNew
-		if my.list.Len() >= my.size {
-			back := my.list.Back()
-			if back != nil {
-				delete(my.cache, back.Value.(*pair).k)
-				my.list.Remove(back)
+func (m *LRUCache[K, V]) Size() int {
+	return m.size
+}
+
+func (m *LRUCache[K, V]) SetSize(size int) {
+	m.size = size
+}
+
+func (m *LRUCache[K, V]) Get(key K) (v V, ok bool) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	if node, ok2 := m.cache[key]; ok2 {
+		m.list.MoveToFront(node)
+		kv := (*KVPair[K, V])(node.Value)
+		return kv.Value, true
+	}
+	return v, false
+}
+
+func (m *LRUCache[K, V]) Set(key K, value V) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	if node, ok := m.cache[key]; ok {
+		m.list.MoveToFront(node)
+		data := (*KVPair[K, V])(node.Value)
+		data.Value = value
+		return
+	}
+	//kv := NewKVPair()
+	//kv.Key = unsafe.Pointer(&key)
+	//kv.Value = unsafe.Pointer(&value)
+	kv := &KVPair[K, V]{Key: key, Value: value}
+
+	nodeNew := m.list.PushFront(unsafe.Pointer(kv))
+	m.cache[key] = nodeNew
+	if m.list.Len() > m.size {
+		back := m.list.Back()
+		if back != nil {
+			kvBack := (*KVPair[K, V])(back.Value)
+			delete(m.cache, kvBack.Key)
+			if m.list.Remove(back) {
+				//back.Free()
 			}
 		}
 	}
 }
 
-func (my *LRUCache) Remove(key interface{}) {
-	my.mutex.Lock()
-	defer my.mutex.Unlock()
-	if elem, ok := my.cache[key]; ok {
-		delete(my.cache, key)
-		my.list.Remove(elem)
+func (m *LRUCache[K, V]) Remove(key K) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	if node, ok := m.cache[key]; ok {
+		delete(m.cache, key)
+		if m.list.Remove(node) {
+			//node.Free()
+		}
 	}
-}
-
-func (my *LRUCache) Len() int {
-	my.mutex.Lock()
-	defer my.mutex.Unlock()
-	return my.list.Len()
-}
-
-func (my *LRUCache) Size() int {
-	my.mutex.Lock()
-	defer my.mutex.Unlock()
-	return my.size
-}
-
-func (my *LRUCache) SetSize(size int) {
-	my.mutex.Lock()
-	defer my.mutex.Unlock()
-	my.size = size
 }

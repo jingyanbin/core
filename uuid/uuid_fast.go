@@ -6,6 +6,7 @@ import (
 	datetime "github.com/jingyanbin/core/datetime"
 	internal "github.com/jingyanbin/core/internal"
 	tz "github.com/jingyanbin/core/timezone"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -58,6 +59,7 @@ func (m *FastGenerator) Info() string {
 
 func (m *FastGenerator) genUUID() int64 {
 	var uuid, unixMsOld, unixMsNow, index int64
+	var spinNum uint8
 	for {
 		uuid = atomic.LoadInt64(&m.uuid)
 		unixMsOld = (uuid >> m.opt.timeShift) + m.opt.Epoch
@@ -83,7 +85,12 @@ func (m *FastGenerator) genUUID() int64 {
 			if atomic.CompareAndSwapInt64(&m.uuid, uuid, uuidNow) {
 				return uuidNow
 			} else {
-				time.Sleep(time.Millisecond)
+				if spinNum < 10 {
+					spinNum++
+					runtime.Gosched()
+				} else {
+					time.Sleep(time.Millisecond)
+				}
 			}
 		}
 	}
@@ -91,6 +98,7 @@ func (m *FastGenerator) genUUID() int64 {
 
 func (m *FastGenerator) genUUIDLast() int64 {
 	var uuid, unixMsOld, unixMsNow, index int64
+	var spinNum uint8
 	for {
 		uuid = atomic.LoadInt64(&m.uuid)
 		unixMsOld = (uuid >> m.opt.timeShift) + m.opt.Epoch
@@ -121,7 +129,12 @@ func (m *FastGenerator) genUUIDLast() int64 {
 			if atomic.CompareAndSwapInt64(&m.uuid, uuid, uuidNow) {
 				return uuidNow
 			} else {
-				time.Sleep(time.Millisecond)
+				if spinNum < 10 {
+					spinNum++
+					runtime.Gosched()
+				} else {
+					time.Sleep(time.Millisecond)
+				}
 			}
 		}
 	}

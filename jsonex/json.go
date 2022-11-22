@@ -1,18 +1,16 @@
-package basal
+package jsonex
 
 import (
-	"bytes"
-	"encoding/json"
-	jsoniter "github.com/json-iterator/go"
-	"io/ioutil"
+	"github.com/jingyanbin/core/internal"
+	"io"
 	"math"
 	"os"
 )
 
-const JSON_APPEND = -1          //追加
-const JSON_APPEND_IN_FRONT = -2 //追加在前面
-const JSON_INDEX_LAST = -3      //最后的位置
-const JSON_INDEX_FIRST = -4     //第一的位置
+const APPEND = -1          //追加
+const APPEND_IN_FRONT = -2 //追加在前面
+const INDEX_LAST = -3      //最后的位置
+const INDEX_FIRST = -4     //第一的位置
 
 type Json struct {
 	data interface{}
@@ -32,63 +30,63 @@ func (my *Json) IsNil() bool {
 }
 
 func (my *Json) ToString(indent bool) (string, error) {
-	return ToString(my.data, indent)
+	return internal.ToString(my.data, indent)
 }
 
 func (my *Json) ToInt64() (int64, error) {
-	return ToInt64(my.data)
+	return internal.ToInt64(my.data)
 }
 
 func (my *Json) ToInt32() (int32, error) {
-	return ToInt32(my.data)
+	return internal.ToInt32(my.data)
 }
 
 func (my *Json) ToFloat64() (float64, error) {
-	return ToFloat64(my.data)
+	return internal.ToFloat64(my.data)
 }
 
 func (my *Json) ToFloat32() (float32, error) {
-	return ToFloat32(my.data)
+	return internal.ToFloat32(my.data)
 }
 
 func (my *Json) ToBool() (bool, error) {
-	v, err := ToInt64(my.data)
+	v, err := internal.ToInt64(my.data)
 	if err != nil {
 		return false, err
 	}
 	return v != 0, err
 }
 
-func (my *Json) TryFloat64() (float64, bool) {
-	if number, ok := my.data.(json.Number); ok {
+func (my *Json) TryFloat64() (float64, error) {
+	if number, ok := my.data.(internal.JsonINumber); ok {
 		v, err := number.Float64()
 		if err != nil {
-			return 0, false
+			return 0, err
 		}
-		return v, true
+		return v, nil
 	}
-	return 0, false
+	return 0, internal.NewError("json.Number value type error: %v", internal.Type(my.data))
 }
 
-func (my *Json) TryFloat32() (float32, bool) {
-	if v, ok := my.TryFloat64(); ok {
+func (my *Json) TryFloat32() (float32, error) {
+	if v, err := my.TryFloat64(); err == nil {
 		if v > math.MaxFloat32 || v < -math.MaxFloat32 {
-			return 0, false
+			return 0, internal.NewError("json.Number overflow float32: %v", my.data)
 		}
-		return float32(v), true
+		return float32(v), nil
 	}
-	return 0, false
+	return 0, internal.NewError("json.Number value type error: %v", internal.Type(my.data))
 }
 
 func (my *Json) TryInt64() (int64, error) {
-	if number, ok := my.data.(json.Number); ok {
+	if number, ok := my.data.(internal.JsonINumber); ok {
 		v, err := number.Int64()
 		if err != nil {
 			return 0, err
 		}
 		return v, nil
 	}
-	return 0, NewError("json.Number value type error: %v", Type(my.data))
+	return 0, internal.NewError("json.Number value type error: %v", internal.Type(my.data))
 }
 
 func (my *Json) TryInt32() (int32, error) {
@@ -97,7 +95,7 @@ func (my *Json) TryInt32() (int32, error) {
 		return 0, err
 	}
 	if v > math.MaxInt32 || v < math.MinInt32 {
-		return 0, NewError("overflow int32 value error: %v", my.data)
+		return 0, internal.NewError("overflow int32 value error: %v", my.data)
 	}
 	return int32(v), nil
 }
@@ -120,7 +118,7 @@ func (my *Json) TrySlice() ([]interface{}, error) {
 	if ok {
 		return v, nil
 	} else {
-		return nil, NewError("[]interface{} value type error: %v", Type(my.data))
+		return nil, internal.NewError("[]interface{} value type error: %v", internal.Type(my.data))
 	}
 }
 
@@ -129,15 +127,17 @@ func (my *Json) TryMap() (map[string]interface{}, error) {
 	if ok {
 		return v, nil
 	} else {
-		return nil, NewError("map[string]interface{} value type error: %v", Type(my.data))
+		return nil, internal.NewError("map[string]interface{} value type error: %v", internal.Type(my.data))
 	}
 }
 
 func (my *Json) TryBytes() ([]byte, error) {
 	if my.data == nil {
-		return nil, NewError("json is nil")
+		return nil, internal.NewError("json is nil")
 	}
-	return json.Marshal(my.data)
+	js, err := internal.TryDumpJson(my.data, false)
+	return []byte(js), err
+	//return json.Marshal(my.data)
 }
 
 func (my *Json) GetJson(keys ...interface{}) *Json {
@@ -152,7 +152,7 @@ func (my *Json) Get(keys ...interface{}) interface{} {
 		case string:
 			v, ok, _ = findMapKey(v, k)
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-			index, _ := ToInt(k)
+			index, _ := internal.ToInt(k)
 			v, ok, _ = findSliceIndex(v, index)
 		default:
 			ok = false
@@ -167,7 +167,7 @@ func (my *Json) Get(keys ...interface{}) interface{} {
 func (my *Json) Bool() bool {
 	v, ok := my.TryBool()
 	if !ok {
-		panic(NewError("bool value type error: %v", Type(my.data)))
+		panic(internal.NewError("bool value type error: %v", internal.Type(my.data)))
 	}
 	return v
 }
@@ -189,7 +189,7 @@ func (my *Json) Slice() []interface{} {
 	if ok {
 		return v
 	} else {
-		panic(NewError("[]interface{} value type error: %v", Type(my.data)))
+		panic(internal.NewError("[]interface{} value type error: %v", internal.Type(my.data)))
 	}
 }
 
@@ -201,8 +201,8 @@ func (my *Json) RangeSliceJson(f func(i int, elem *Json) bool) {
 	}
 }
 
-func (my *Json) Loads(js interface{}) error {
-	obj, err := TryNewJson(js)
+func (my *Json) Load(js interface{}) error {
+	obj, err := TryLoad(js)
 	if err != nil {
 		return err
 	}
@@ -213,7 +213,7 @@ func (my *Json) Loads(js interface{}) error {
 func (my *Json) create(keys []interface{}) (interface{}, error) {
 	length := len(keys)
 	if length < 2 {
-		return nil, NewError("json create error: keys num less 2, keys=%v", keys)
+		return nil, internal.NewError("json create error: keys num less 2, keys=%v", keys)
 	}
 
 	var lastRoot interface{}
@@ -226,17 +226,17 @@ func (my *Json) create(keys []interface{}) (interface{}, error) {
 			parent[k] = lastRoot
 			lastRoot = parent
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-			index, _ := ToInt(k)
-			if index == JSON_APPEND || index == JSON_APPEND_IN_FRONT {
+			index, _ := internal.ToInt(k)
+			if index == APPEND || index == APPEND_IN_FRONT {
 				index = 0
 			}
 			if index == 0 {
 				lastRoot = []interface{}{lastRoot}
 			} else {
-				return nil, NewError("json create error: slice out of range, keys=%v, index=%v", keys, i)
+				return nil, internal.NewError("json create error: slice out of range, keys=%v, index=%v", keys, i)
 			}
 		default:
-			return nil, NewError("json create error: not found key type, keys=%v, index=%v, type=%v", keys, i, Type(keys[i]))
+			return nil, internal.NewError("json create error: not found key type, keys=%v, index=%v, type=%v", keys, i, internal.Type(keys[i]))
 		}
 	}
 	return lastRoot, nil
@@ -244,7 +244,7 @@ func (my *Json) create(keys []interface{}) (interface{}, error) {
 
 func (my *Json) set(root interface{}, args []interface{}) (interface{}, error) {
 	if len(args) < 2 {
-		return nil, NewError("json set error: args num less 2")
+		return nil, internal.NewError("json set error: args num less 2")
 	}
 	switch data := root.(type) {
 	case *interface{}:
@@ -253,49 +253,49 @@ func (my *Json) set(root interface{}, args []interface{}) (interface{}, error) {
 			var index int
 			switch idx := args[0].(type) {
 			case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-				index, _ = ToInt(idx)
+				index, _ = internal.ToInt(idx)
 			default:
-				return nil, NewError("json set error: key not is index %v", args)
+				return nil, internal.NewError("json set error: key not is index %v", args)
 			}
 			maxLen := len(v)
-			if index > maxLen || index < JSON_INDEX_FIRST {
-				return nil, NewError("json set error: out of range[%v, %v] error: index=%v", JSON_INDEX_FIRST, maxLen, index)
+			if index > maxLen || index < INDEX_FIRST {
+				return nil, internal.NewError("json set error: out of range[%v, %v] error: index=%v", INDEX_FIRST, maxLen, index)
 			}
 			if len(args) == 2 {
 				value := args[1]
-				if index == JSON_APPEND || index == maxLen {
+				if index == APPEND || index == maxLen {
 					v = append(v, value)
-				} else if index == JSON_APPEND_IN_FRONT {
+				} else if index == APPEND_IN_FRONT {
 					v = append([]interface{}{value}, v...)
-				} else if index == JSON_INDEX_LAST {
+				} else if index == INDEX_LAST {
 					if maxLen > 0 {
 						v[maxLen-1] = value
 					}
-				} else if index == JSON_INDEX_FIRST {
+				} else if index == INDEX_FIRST {
 					v[0] = value
 				} else {
 					v[index] = value
 				}
 			} else {
-				if index == JSON_APPEND || index == maxLen {
+				if index == APPEND || index == maxLen {
 					value, err := my.create(args[1:])
 					if err != nil {
 						return nil, err
 					}
 					v = append(v, value)
-				} else if index == JSON_APPEND_IN_FRONT {
+				} else if index == APPEND_IN_FRONT {
 					value, err := my.create(args[1:])
 					if err != nil {
 						return nil, err
 					}
 					v = append([]interface{}{value}, v...)
-				} else if index == JSON_INDEX_LAST {
+				} else if index == INDEX_LAST {
 					value, err := my.set(&v[maxLen-1], args[1:])
 					if err != nil {
 						return nil, err
 					}
 					v[maxLen-1] = value
-				} else if index == JSON_INDEX_FIRST {
+				} else if index == INDEX_FIRST {
 					value, err := my.set(&v[0], args[1:])
 					if err != nil {
 						return nil, err
@@ -314,7 +314,7 @@ func (my *Json) set(root interface{}, args []interface{}) (interface{}, error) {
 		case map[string]interface{}:
 			key, ok := args[0].(string)
 			if !ok {
-				return nil, NewError("json set error: key not is string %v", args)
+				return nil, internal.NewError("json set error: key not is string %v", args)
 			}
 			if len(args) == 2 {
 				v[key] = args[1]
@@ -337,14 +337,14 @@ func (my *Json) set(root interface{}, args []interface{}) (interface{}, error) {
 			return v, nil
 		}
 	}
-	return nil, NewError("json set type error: args=%v", args)
+	return nil, internal.NewError("json set type error: args=%v", args)
 }
 
 func (my *Json) Set(args ...interface{}) error {
 	if my.data == nil {
 		value, err := my.create(args)
 		if err != nil {
-			return NewError("json root is nil create error: %v", err)
+			return internal.NewError("json root is nil create error: %v", err)
 		}
 		my.data = value
 		return nil
@@ -368,12 +368,12 @@ func (my *Json) delete(root interface{}, keys []interface{}) (interface{}, bool,
 		case []interface{}:
 			switch idx := keys[0].(type) {
 			case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-				index, err := ToInt(idx)
+				index, err := internal.ToInt(idx)
 				if err == nil {
 					maxLen := len(v)
-					if index == JSON_INDEX_LAST {
+					if index == INDEX_LAST {
 						index = maxLen - 1
-					} else if index == JSON_INDEX_FIRST {
+					} else if index == INDEX_FIRST {
 						index = 0
 					}
 					if index >= 0 && index < maxLen {
@@ -433,7 +433,7 @@ func findMapKey(data interface{}, key string) (v interface{}, ok bool, err error
 		v, ok = m[key]
 	default:
 		ok = false
-		err = NewError("not is map[string]interface{}, type=%v", Type(m))
+		err = internal.NewError("not is map[string]interface{}, type=%v", internal.Type(m))
 	}
 	return
 }
@@ -444,21 +444,44 @@ func findSliceIndex(data interface{}, index int) (interface{}, bool, error) {
 	}
 	slice, ok := data.([]interface{})
 	if !ok {
-		return nil, false, NewError("not is []interface{}, type=%v", Type(data))
+		return nil, false, internal.NewError("not is []interface{}, type=%v", internal.Type(data))
 	}
 	maxLen := len(slice)
 	if index >= 0 && index < maxLen {
 		return slice[index], true, nil
-	} else if index == JSON_INDEX_LAST && maxLen > 0 {
+	} else if index == INDEX_LAST && maxLen > 0 {
 		return slice[maxLen-1], true, nil
-	} else if index == JSON_INDEX_FIRST && maxLen > 0 {
+	} else if index == INDEX_FIRST && maxLen > 0 {
 		return slice[0], true, nil
 	} else {
 		return nil, false, nil
 	}
 }
 
-func TryNewJson(js interface{}) (*Json, error) {
+func loadJson(v []byte) (*Json, error) {
+	js := &Json{}
+	if err := internal.LoadJsonBytesTo(v, &js.data); err != nil {
+		return nil, err
+	}
+	return js, nil
+	//decoder := jsoniter.NewDecoder(bytes.NewBuffer(v))
+	//decoder.UseNumber()
+	//err := decoder.Decode(&js.data)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return js, nil
+}
+
+func linkJson(js interface{}) (*Json, error) {
+	switch v := js.(type) {
+	case map[string]interface{}, []interface{}:
+		return &Json{v}, nil
+	}
+	return nil, internal.NewError("link json type error: %v", internal.Type(js))
+}
+
+func TryLoad(js interface{}) (*Json, error) {
 	switch v := js.(type) {
 	case string:
 		return loadJson([]byte(v))
@@ -467,72 +490,34 @@ func TryNewJson(js interface{}) (*Json, error) {
 	case map[string]interface{}, []interface{}:
 		return linkJson(v)
 	case *os.File:
-		bs, err := ioutil.ReadAll(v)
+		bs, err := io.ReadAll(v)
 		if err != nil {
 			return nil, err
 		}
 		return loadJson(bs)
 	}
-	return nil, NewError("new json type error: %v", Type(js))
+	return nil, internal.NewError("new json type error: %v", internal.Type(js))
 }
 
-func NewJson(js interface{}) *Json {
-	v, err := TryNewJson(js)
+// Load
+//
+//	@Description: 加载为json对象
+//	@param js  map[string] interface, []interface, struct, json string, json []byte, *os.File
+//	@return *Json
+func Load(js interface{}) *Json {
+	v, err := TryLoad(js)
 	if err != nil {
 		panic(err)
 	}
 	return v
 }
 
-func loadJson(v []byte) (*Json, error) {
-	js := &Json{}
-	decoder := json.NewDecoder(bytes.NewBuffer(v))
-	decoder.UseNumber()
-	err := decoder.Decode(&js.data)
-	if err != nil {
-		return nil, err
-	}
-	return js, nil
-}
+func LoadFileTo(jsFileName string, toPtr interface{}) error
 
-func linkJson(js interface{}) (*Json, error) {
-	switch v := js.(type) {
-	case map[string]interface{}, []interface{}:
-		return &Json{v}, nil
-	}
-	return nil, NewError("link json type error: %v", Type(js))
-}
+func LoadBytesTo(js []byte, toPtr interface{}) error
 
-func LoadJsonFileTo(jsFileName string, toPtr interface{}) error {
-	//if isNil, typ := IsNilPointer(v); isNil {
-	//	return NewError("LoadJsonFileTo IsNilPointer: %s", typ)
-	//}
-	data, err := os.ReadFile(jsFileName)
-	if err != nil {
-		return err
-	}
-	return LoadJsonBytesTo(data, toPtr)
-}
+func LoadStringTo(js string, toPtr interface{}) error
 
-func LoadJsonBytesTo(js []byte, toPtr interface{}) error {
-	dec := jsoniter.NewDecoder(bytes.NewBuffer(js))
-	//dec := json.NewDecoder(bytes.NewBuffer(js))
-	dec.UseNumber()
-	err := dec.Decode(toPtr)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+func TryDump(v interface{}, indent bool) (string, error)
 
-func LoadJsonStringTo(js string, toPtr interface{}) error {
-	return LoadJsonBytesTo([]byte(js), toPtr)
-}
-
-func ToJsonStr(v interface{}) string {
-	b, err := json.Marshal(v)
-	if err != nil {
-		panic(err)
-	}
-	return string(b)
-}
+func Dump(v interface{}, indent bool) string

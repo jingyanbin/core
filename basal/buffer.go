@@ -7,3 +7,5 @@ import (
 type Buffer = internal.Buffer
 
 func NewBuffer(size int) *Buffer
+
+var BufferPool = internal.BufferPool

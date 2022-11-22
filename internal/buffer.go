@@ -5,55 +5,62 @@ import (
 	_ "unsafe"
 )
 
-type Buffer []byte
-
-func (buf *Buffer) AppendByte(b byte) {
-	*buf = append(*buf, b)
+type Buffer struct {
+	buf   []byte
+	index uint8
 }
 
-func (buf *Buffer) AppendBytes(bs ...byte) {
-	*buf = append(*buf, bs...)
+func (m *Buffer) AppendByte(b byte) {
+	m.buf = append(m.buf, b)
 }
 
-func (buf *Buffer) AppendString(s string) {
-	*buf = append(*buf, s...)
+func (m *Buffer) AppendBytes(bs ...byte) {
+	m.buf = append(m.buf, bs...)
 }
 
-func (buf *Buffer) AppendStrings(ss ...string) {
+func (m *Buffer) AppendString(s string) {
+	m.buf = append(m.buf, s...)
+}
+
+func (m *Buffer) AppendStrings(ss ...string) {
 	for _, s := range ss {
-		*buf = append(*buf, s...)
+		m.buf = append(m.buf, s...)
 	}
 }
 
-func (buf *Buffer) AppendInt(n, w int) {
-	ItoA((*[]byte)(buf), n, w)
+func (m *Buffer) AppendInt(n, w int) {
+	ItoA(&m.buf, n, w)
 }
 
-func (buf *Buffer) AppendFloat(f float64) {
-	*buf = strconv.AppendFloat(*buf, f, 'f', -1, 64)
+func (m *Buffer) AppendFloat(f float64) {
+	m.buf = strconv.AppendFloat(m.buf, f, 'f', -1, 64)
 }
 
-func (buf *Buffer) Bytes() []byte {
-	return *buf
+func (m *Buffer) Bytes() []byte {
+	return m.buf
 }
 
-func (buf *Buffer) ToString() string {
-	return string(*buf)
+func (m *Buffer) ToString() string {
+	return BytesPtrToStr(m.buf)
 }
 
-func (buf *Buffer) Clear() {
-	*buf = (*buf)[:0]
+func (m *Buffer) Clear() {
+	m.buf = m.buf[:0]
 }
 
-func (buf *Buffer) Cap() int {
-	return cap(*buf)
+func (m *Buffer) Len() int {
+	return len(m.buf)
 }
 
-func (buf *Buffer) Free() {
-	buffersMgr.Free(buf)
+func (m *Buffer) Cap() int {
+	return cap(m.buf)
+}
+
+func (m *Buffer) Free() {
+	BufferPool.Free(m)
 }
 
 //go:linkname NewBuffer github.com/jingyanbin/core/basal.NewBuffer
 func NewBuffer(size int) *Buffer {
-	return buffersMgr.New(size)
+	return BufferPool.New(size)
 }

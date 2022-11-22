@@ -92,7 +92,7 @@ func (my *logBaseWriter) write(writer io.Writer, level int, file string, line in
 	buf.AppendByte('\n')
 	//buf = append(buf, content...)
 	//buf = append(buf, '\n')
-	n, err := writer.Write(*buf)
+	n, err := writer.Write(buf.Bytes())
 
 	if err != nil {
 		fmt.Printf("logBaseWriter write error: %v, n=%v\n", err, n)

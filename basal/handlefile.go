@@ -17,6 +17,13 @@ func IsExistBy(f *os.File, err error) bool
 // IsExist 文件或文件夹是否存在
 func IsExist(path string) (bool, error)
 
+// IsExistByFileInfo
+//
+//	@Description: 文件是否存在
+//	@param info 文件信息
+//	@return bool 是否存在
+func IsExistByFileInfo(info os.FileInfo) bool
+
 var ErrNotFolder = internal.ErrNotFolder
 
 // IsExistFolder 文件夹是否存在

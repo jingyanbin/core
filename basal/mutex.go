@@ -15,13 +15,12 @@ type Mutex struct {
 }
 
 func (m *Mutex) Lock() {
-	start := internal.UnixMs()
 	var now int64
-	var waitMs int64
+	var spinNum uint8
 	for !m.mu.TryLock() {
 		now = internal.UnixMs()
-		waitMs = now - start
-		if waitMs < 33 {
+		if spinNum < 10 {
+			spinNum++
 			runtime.Gosched()
 		} else {
 			if m.lockedTime > 0 {
@@ -61,13 +60,12 @@ type RWMutex struct {
 }
 
 func (m *RWMutex) Lock() {
-	start := internal.UnixMs()
 	var now int64
-	var waitMs int64
+	var spinNum uint8
 	for !m.rw.TryLock() {
 		now = internal.UnixMs()
-		waitMs = now - start
-		if waitMs < 33 {
+		if spinNum < 10 {
+			spinNum++
 			runtime.Gosched()
 		} else {
 			if m.lockedTime > 0 {
@@ -91,13 +89,12 @@ func (m *RWMutex) Unlock() {
 }
 
 func (m *RWMutex) RLock() {
-	start := internal.UnixMs()
 	var now int64
-	var waitMs int64
+	var spinNum uint8
 	for !m.rw.TryRLock() {
 		now = internal.UnixMs()
-		waitMs = now - start
-		if waitMs < 33 {
+		if spinNum < 10 {
+			spinNum++
 			runtime.Gosched()
 		} else {
 			if m.lockedTime > 0 {

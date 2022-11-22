@@ -83,6 +83,15 @@ func (m *fileQueuePusher) size() (size int64, err error) {
 		if fi, err = m.f.Stat(); err != nil {
 			return 0, err
 		}
+	} else {
+		if !internal.IsExistByFileInfo(fi) {
+			if err = m.reopen(true); err != nil {
+				return 0, err
+			}
+			if fi, err = m.f.Stat(); err != nil {
+				return 0, err
+			}
+		}
 	}
 	return fi.Size(), nil
 }

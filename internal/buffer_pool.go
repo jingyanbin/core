@@ -2,58 +2,110 @@ package internal
 
 import (
 	"sync"
+	"sync/atomic"
 )
 
 const bufferPoolNumber = 10
-const minBufferSize = 256
+const bufferPoolIndexMax = bufferPoolNumber - 1
 
-func makeBuffer(size int) *Buffer {
-	buf := make(Buffer, 0, size)
-	return &buf
-}
+const minBufferSize = 1 << 10
+
+var bufferLevel = 1
+var bufferStatistics bool
 
 type bufferPool struct {
 	sync.Pool
+	size int64
+
+	freeTotal uint64 //释放总内存
+	freeCount uint32 //释放次数
+	newCount  uint32 //申请次数
 }
 
-func (pool *bufferPool) init(index int) {
-	pool.New = func() interface{} {
+func (m *bufferPool) Get() *Buffer {
+	if bufferStatistics {
+		atomic.AddUint32(&m.newCount, 1)
+	}
+	return m.Pool.Get().(*Buffer)
+}
+
+func (m *bufferPool) Put(buf *Buffer) {
+	if bufferStatistics {
+		atomic.AddUint64(&m.freeTotal, uint64(buf.Len()))
+		atomic.AddUint32(&m.freeCount, 1)
+	}
+	buf.Clear()
+	m.Pool.Put(buf)
+}
+
+func (m *bufferPool) init(index int) {
+	m.size = int64((index + 1) * minBufferSize * bufferLevel)
+	log.InfoF("================init: index: %v, size: %v", index, m.size)
+	m.New = func() interface{} {
 		if index > 0 {
-			return makeBuffer(index * minBufferSize)
+			return &Buffer{buf: make([]byte, 0, m.size), index: uint8(index)}
 		} else {
-			return makeBuffer(minBufferSize / 2)
+			return &Buffer{buf: make([]byte, 0, m.size), index: uint8(index)}
 		}
 	}
 }
 
 type bufferPools [bufferPoolNumber]*bufferPool
 
-func (pools *bufferPools) Init() {
+func (m *bufferPools) init() {
 	for i := 0; i < bufferPoolNumber; i++ {
-		pools[i] = &bufferPool{}
-		pools[i].init(i)
+		m[i] = &bufferPool{}
+		m[i].init(i)
 	}
 }
 
-func (pools *bufferPools) New(size int) *Buffer {
-	index := size / minBufferSize
-	if index < 0 || index >= bufferPoolNumber {
-		return makeBuffer(size)
+func (m *bufferPools) SetLevel(level int) {
+	bufferLevel = level
+}
+
+func (m *bufferPools) SetStatistics(statistics bool) {
+	bufferStatistics = statistics
+}
+
+func (m *bufferPools) Info() string {
+	var s string
+	for i, pool := range m {
+		var avg uint64
+		if pool.freeCount > 0 {
+			avg = pool.freeTotal / uint64(pool.freeCount)
+		}
+		s += Sprintf("\nid: %d, free total: %d, free/new: %d/%d, avg: %d", i, pool.freeTotal, pool.freeCount, pool.newCount, avg)
+	}
+	return s
+}
+
+func (m *bufferPools) New(size int) *Buffer {
+	bufferSize := minBufferSize * bufferLevel
+	index := size / bufferSize
+	if size%bufferSize == 0 {
+		index--
+	}
+	log.InfoF("================New: %v", index)
+	if index < 0 {
+		return m[0].Get()
+	} else if index < bufferPoolNumber {
+		return m[index].Get()
 	} else {
-		return pools[index].Get().(*Buffer)
+		return &Buffer{buf: make([]byte, 0, size), index: uint8(index)}
 	}
 }
 
-func (pools *bufferPools) Free(buf *Buffer) {
-	index := cap(*buf) / minBufferSize
-	if index >= 0 && index < bufferPoolNumber {
-		*buf = (*buf)[:0]
-		pools[index].Put(buf)
+func (m *bufferPools) Free(buf *Buffer) {
+	index := buf.index
+	if index < bufferPoolNumber {
+		m[index].Put(buf)
+	} else {
+		m[bufferPoolIndexMax].Put(buf)
 	}
 }
 
-var buffersMgr bufferPools
+var BufferPool bufferPools
 
 func init() {
-	buffersMgr.Init()
+	BufferPool.init()
 }

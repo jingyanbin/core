@@ -27,9 +27,10 @@ func (m *RuneRange) Check(r rune) bool {
 	return r >= m[0] && r <= m[1]
 }
 
-type StringChecker []func(r rune) bool
+// 字符串编码检查
+type UnicodeChecker []func(r rune) bool
 
-func (m *StringChecker) runesCheck(s []rune) bool {
+func (m *UnicodeChecker) runesCheck(s []rune) bool {
 	for _, c := range s {
 		ok := false
 		for _, f := range *m {
@@ -45,7 +46,7 @@ func (m *StringChecker) runesCheck(s []rune) bool {
 	return true
 }
 
-func (m *StringChecker) runesReplace(s []rune, rep rune) []rune {
+func (m *UnicodeChecker) runesReplace(s []rune, rep rune) []rune {
 	buf := make([]rune, 0, len(s))
 	for _, c := range s {
 		ok := false
@@ -64,11 +65,11 @@ func (m *StringChecker) runesReplace(s []rune, rep rune) []rune {
 	return buf
 }
 
-func (m *StringChecker) Check(s string) bool {
+func (m *UnicodeChecker) Check(s string) bool {
 	return m.runesCheck([]rune(s))
 }
 
-func (m *StringChecker) Replace(s string, rep rune) string {
+func (m *UnicodeChecker) Replace(s string, rep rune) string {
 	buf := m.runesReplace([]rune(s), rep)
 	return string(buf)
 }
