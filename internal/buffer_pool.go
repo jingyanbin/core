@@ -40,7 +40,7 @@ func (m *bufferPool) Put(buf *Buffer) {
 
 func (m *bufferPool) init(index int) {
 	m.size = int64((index + 1) * minBufferSize * bufferLevel)
-	log.InfoF("================init: index: %v, size: %v", index, m.size)
+	//log.InfoF("================init: index: %v, size: %v", index, m.size)
 	m.New = func() interface{} {
 		if index > 0 {
 			return &Buffer{buf: make([]byte, 0, m.size), index: uint8(index)}
@@ -85,7 +85,7 @@ func (m *bufferPools) New(size int) *Buffer {
 	if size%bufferSize == 0 {
 		index--
 	}
-	log.InfoF("================New: %v", index)
+	//log.InfoF("================New: %v", index)
 	if index < 0 {
 		return m[0].Get()
 	} else if index < bufferPoolNumber {

@@ -204,7 +204,7 @@ func copyValue(dst, src reflect.Value, all bool, parent map[uintptr]struct{}) {
 		if !checkCanSet(dst, all) {
 			return
 		}
-		log.ErrorF("==================%v", src)
+		//log.ErrorF("==================%v", src)
 		setValue(dst, src, all)
 		//fmt.Printf("6666666666666: %v, %v, %v, %v\n", dst, src, dst.IsValid(), src.IsValid())
 		//dstP := *(*myValue)(unsafe.Pointer(&dst))
