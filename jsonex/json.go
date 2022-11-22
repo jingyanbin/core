@@ -12,6 +12,8 @@ const APPEND_IN_FRONT = -2 //追加在前面
 const INDEX_LAST = -3      //最后的位置
 const INDEX_FIRST = -4     //第一的位置
 
+type INumber internal.JsonINumber
+
 type Json struct {
 	data interface{}
 }

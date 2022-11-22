@@ -23,7 +23,7 @@ func IsUTF8(buf []byte) bool {
 				}
 				nBytes-- //减掉首字节的一个计数
 			}
-		} else { //处理多字节字符
+		} else {                     //处理多字节字符
 			if buf[i]&0xc0 != 0x80 { //判断多字节后面的字节是否是10开头
 				return false
 			}
@@ -126,7 +126,7 @@ func ToString(value interface{}, indent bool) (string, error) {
 			kd2 := vi.Elem().Kind()
 			switch kd2 {
 			case reflect.Struct:
-				return TryDumpJson(vi, indent)
+				return TryDumpJson(vi.Elem().Interface(), indent)
 				//return ToJsonString(vi.Elem().Interface(), indent)
 			default:
 				return "", NewError("ToString value ptr type error: %v", vi.Type())

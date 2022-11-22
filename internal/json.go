@@ -2,7 +2,7 @@ package internal
 
 import (
 	"bytes"
-	//"encoding/json"
+	//json "encoding/json"
 	json "github.com/json-iterator/go"
 	"os"
 	_ "unsafe"
