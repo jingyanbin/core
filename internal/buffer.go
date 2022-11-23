@@ -36,12 +36,17 @@ func (m *Buffer) AppendFloat(f float64) {
 	m.buf = strconv.AppendFloat(m.buf, f, 'f', -1, 64)
 }
 
+// Bytes
+//
+//	@Description: 外部调用了Bytes 后没有回收前不可重用
+//	@receiver m
+//	@return []byte
 func (m *Buffer) Bytes() []byte {
 	return m.buf
 }
 
 func (m *Buffer) ToString() string {
-	return BytesPtrToStr(m.buf)
+	return string(m.buf)
 }
 
 func (m *Buffer) Clear() {

@@ -23,7 +23,7 @@ func IsUTF8(buf []byte) bool {
 				}
 				nBytes-- //减掉首字节的一个计数
 			}
-		} else {                     //处理多字节字符
+		} else { //处理多字节字符
 			if buf[i]&0xc0 != 0x80 { //判断多字节后面的字节是否是10开头
 				return false
 			}
@@ -465,4 +465,22 @@ func AddRemain[T Number](oldNum, addNum, numMax T) (newNum, added, remained T) {
 		return numMax, addNum - remained, remained
 	}
 	return oldNum + addNum, addNum, 0
+}
+
+func Reverse[T any](arr []T) {
+	dLen := len(arr)
+	var temp T
+	for i := 0; i < dLen/2; i++ {
+		temp = arr[i]
+		arr[i] = arr[dLen-1-i]
+		arr[dLen-1-i] = temp
+	}
+}
+
+func PowInt64(m int64, n int) int64 {
+	total := m
+	for i := 0; i < n; i++ {
+		total *= m
+	}
+	return total
 }

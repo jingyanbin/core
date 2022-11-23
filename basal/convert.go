@@ -147,3 +147,11 @@ func Round(value float64, digit int) float64 {
 func AddRemain[T Number](oldNum, addNum, numMax T) (newNum, added, remained T) {
 	return internal.AddRemain(oldNum, added, numMax)
 }
+
+func Reverse[T any](arr []T) {
+	internal.Reverse(arr)
+}
+
+func PowInt64(m int64, n int) int64 {
+	return internal.PowInt64(m, n)
+}
