@@ -12,7 +12,7 @@ type SortedSet struct {
 
 // my与b的差集
 func (my *SortedSet) Difference(b *SortedSet) *SortedSet {
-	c := deepcopy.Copy(my).(*SortedSet)
+	c := deepcopy.Copy(my)
 	for _, value := range b.buf {
 		c.RemoveByKey(my.getKey(value))
 	}
@@ -33,7 +33,7 @@ func (my *SortedSet) Intersection(b *SortedSet) *SortedSet {
 
 // 并集
 func (my *SortedSet) Union(b *SortedSet) *SortedSet {
-	c := deepcopy.Copy(my).(*SortedSet)
+	c := deepcopy.Copy(my)
 	for _, value := range b.buf {
 		c.Add(value)
 	}

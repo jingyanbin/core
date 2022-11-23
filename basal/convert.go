@@ -145,7 +145,7 @@ func Round(value float64, digit int) float64 {
 
 // 添加剩余
 func AddRemain[T Number](oldNum, addNum, numMax T) (newNum, added, remained T) {
-	return internal.AddRemain(oldNum, added, numMax)
+	return internal.AddRemain(oldNum, addNum, numMax)
 }
 
 func Reverse[T any](arr []T) {
@@ -154,4 +154,8 @@ func Reverse[T any](arr []T) {
 
 func PowInt64(m int64, n int) int64 {
 	return internal.PowInt64(m, n)
+}
+
+func Shuffle[T any](arr []T) {
+	internal.Shuffle(arr)
 }

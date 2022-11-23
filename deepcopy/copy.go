@@ -36,29 +36,48 @@ func checkCanSet(dst reflect.Value, all bool) bool {
 	return dst.CanSet()
 }
 
+func modifyValueFlag(v reflect.Value) reflect.Value {
+	vp := *(*myValue)(unsafe.Pointer(&v))
+	if vp.flag&flagStickyRO != 0 {
+		vp.flag = vp.flag ^ (flagStickyRO)
+	}
+	if vp.flag&flagEmbedRO != 0 {
+		vp.flag = vp.flag ^ (flagEmbedRO)
+	}
+	value := *(*reflect.Value)(unsafe.Pointer(&vp))
+	return value
+}
+
 func setValue(dst, src reflect.Value, all bool) bool {
 	if dst.CanSet() {
 		dst.Set(src)
 		return true
 	}
 	if all {
-		dstP := *(*myValue)(unsafe.Pointer(&dst))
-		dstP.flag = dstP.flag ^ (flagAddr | flagRO)
-		dstV := *(*reflect.Value)(unsafe.Pointer(&dstP))
-		dstV.Set(src)
+		dstV := modifyValueFlag(dst)
+		srcV := modifyValueFlag(src)
+		dstV.Set(srcV)
 		return true
 	}
 	return false
 }
 
-// Copy 拷贝结构体公共字段, 不支持chan
-func Copy(src interface{}) interface{} {
-	return deepCopy(src, false)
+// Copy[T any]
+//
+//	@Description: 拷贝结构体公共字段, 不支持chan
+//	@param src
+//	@return T
+func Copy[T any](src T) T {
+	return deepCopy(src, false).(T)
 }
 
-// CopyAll 拷贝结构体所有字段(包含私有字段), 不支持chan
-func CopyAll(src interface{}) interface{} {
-	return deepCopy(src, true)
+// CopyAll[T any]
+//
+//	@Description:  拷贝结构体所有字段(包含私有字段), 不支持chan
+//	@param src
+//	@return T
+func CopyAll[T any](src T) T {
+	return deepCopy(src, true).(T)
 }
 
 func deepCopy(src interface{}, all bool) interface{} {
@@ -204,8 +223,9 @@ func copyValue(dst, src reflect.Value, all bool, parent map[uintptr]struct{}) {
 		if !checkCanSet(dst, all) {
 			return
 		}
-		//log.ErrorF("==================%v", src)
+		//fmt.Println(src)
 		setValue(dst, src, all)
+
 		//fmt.Printf("6666666666666: %v, %v, %v, %v\n", dst, src, dst.IsValid(), src.IsValid())
 		//dstP := *(*myValue)(unsafe.Pointer(&dst))
 		//srcP := *(*myValue)(unsafe.Pointer(&src))

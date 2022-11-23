@@ -25,3 +25,5 @@ type LinkList = internal.LinkList
 func NewLinkList() *LinkList
 
 //func NewLinkListNode() *LinkListNode
+
+var Compress = internal.Compress

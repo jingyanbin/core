@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"reflect"
 	"strconv"
 	"unsafe"
@@ -459,10 +460,10 @@ func AddRemain[T Number](oldNum, addNum, numMax T) (newNum, added, remained T) {
 	if addNum < 0 {
 		return oldNum, 0, 0
 	}
-	cha := numMax - oldNum
-	remained = addNum - cha
+	canAdd := numMax - oldNum
+	remained = addNum - canAdd
 	if remained > 0 {
-		return numMax, addNum - remained, remained
+		return numMax, canAdd, remained
 	}
 	return oldNum + addNum, addNum, 0
 }
@@ -483,4 +484,14 @@ func PowInt64(m int64, n int) int64 {
 		total *= m
 	}
 	return total
+}
+
+func Shuffle[T any](arr []T) {
+	if len(arr) < 2 {
+		return
+	}
+	for i := int64(len(arr)) - 1; i > 0; i-- {
+		j := rand.Int63n(i + 1)
+		arr[i], arr[j] = arr[j], arr[i]
+	}
 }

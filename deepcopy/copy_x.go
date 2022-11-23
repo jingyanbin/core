@@ -9,7 +9,12 @@ import (
 	"reflect"
 )
 
-func CopyByGob(src interface{}) interface{} {
+// CopyByGob[T any]
+//
+//	@Description: 不能拷贝私有字段
+//	@param src
+//	@return T
+func CopyByGob[T any](src T) T {
 	buf := &bytes.Buffer{}
 	encoder := gob.NewEncoder(buf)
 	err := encoder.Encode(src)
@@ -20,7 +25,7 @@ func CopyByGob(src interface{}) interface{} {
 	if typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
 	}
-	v := reflect.New(typ).Interface()
+	v := reflect.New(typ).Interface().(T)
 	decoder := gob.NewDecoder(bytes.NewReader(buf.Bytes()))
 	err = decoder.Decode(v)
 	if err != nil {
@@ -29,7 +34,12 @@ func CopyByGob(src interface{}) interface{} {
 	return v
 }
 
-func CopyByMsgPack(src interface{}) interface{} {
+// CopyByMsgPack[T any]
+//
+//	@Description: 不能拷贝私有字段
+//	@param src
+//	@return T
+func CopyByMsgPack[T any](src T) T {
 	data, err := msgpack.Marshal(src)
 	if err != nil {
 		panic(err)
@@ -38,7 +48,7 @@ func CopyByMsgPack(src interface{}) interface{} {
 	if typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
 	}
-	v := reflect.New(typ).Interface()
+	v := reflect.New(typ).Interface().(T)
 	err = msgpack.Unmarshal(data, v)
 	if err != nil {
 		panic(err)
@@ -46,7 +56,12 @@ func CopyByMsgPack(src interface{}) interface{} {
 	return v
 }
 
-func CopyByJson(src interface{}) interface{} {
+// CopyByJson[T any]
+//
+//	@Description: 不能拷贝私有字段
+//	@param src
+//	@return T
+func CopyByJson[T any](src T) T {
 	buf := &bytes.Buffer{}
 	encoder := json.NewEncoder(buf)
 	encoder.SetEscapeHTML(false)
@@ -58,7 +73,7 @@ func CopyByJson(src interface{}) interface{} {
 	if typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
 	}
-	v := reflect.New(typ).Interface()
+	v := reflect.New(typ).Interface().(T)
 	decoder := json.NewDecoder(buf)
 	decoder.UseNumber()
 	err = decoder.Decode(v)
@@ -68,8 +83,12 @@ func CopyByJson(src interface{}) interface{} {
 	return v
 }
 
-// CopyByGoGo gogo protobuf 协议拷贝
-func CopyByGoGo(src proto.Message) proto.Message {
+// CopyByGoGo[T proto.Message]
+//
+//	@Description: 协议拷贝 不能拷贝私有字段
+//	@param src
+//	@return T
+func CopyByGoGo[T proto.Message](src T) T {
 	data, err := proto.Marshal(src)
 	if err != nil {
 		panic(err)
@@ -78,7 +97,7 @@ func CopyByGoGo(src proto.Message) proto.Message {
 	if typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
 	}
-	v := reflect.New(typ).Interface().(proto.Message)
+	v := reflect.New(typ).Interface().(T)
 	err = proto.Unmarshal(data, v)
 	if err != nil {
 		panic(err)
