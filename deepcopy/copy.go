@@ -2,12 +2,9 @@ package deepcopy
 
 import (
 	"fmt"
-	"github.com/jingyanbin/core/internal"
 	"reflect"
 	"unsafe"
 )
-
-var log = internal.GetStdoutLogger()
 
 type flag uintptr
 

@@ -3,7 +3,6 @@ package uuid
 import (
 	"encoding/binary"
 	"encoding/hex"
-	datetime "github.com/jingyanbin/core/datetime"
 	internal "github.com/jingyanbin/core/internal"
 	tz "github.com/jingyanbin/core/timezone"
 	"runtime"
@@ -48,7 +47,7 @@ func NewFastGenerator(opt Option) *FastGenerator {
 }
 
 func (m *FastGenerator) init() {
-	unixMs := datetime.UnixMs()
+	unixMs := internal.UnixMs()
 	timeValue := unixMs - m.opt.Epoch
 	m.uuid = (timeValue << m.opt.timeShift) | (m.opt.WorkerId << m.opt.workerIdShift) | 0
 }
@@ -63,7 +62,7 @@ func (m *FastGenerator) genUUID() int64 {
 	for {
 		uuid = atomic.LoadInt64(&m.uuid)
 		unixMsOld = (uuid >> m.opt.timeShift) + m.opt.Epoch
-		unixMsNow = datetime.UnixMs()
+		unixMsNow = internal.UnixMs()
 		index = ((uuid & m.opt.indexMax) + 1) & m.opt.indexMax
 		if index == 0 {
 			unixMsOld = unixMsOld + 1
@@ -71,13 +70,13 @@ func (m *FastGenerator) genUUID() int64 {
 		if unixMsNow < unixMsOld {
 			interval := time.Duration(unixMsOld-unixMsNow) * time.Millisecond
 			if interval > backTime { //时间回拨超过1秒 一般
-				log.ErrorF("uuid back in time: %s, sleep: %vms", datetime.UnixToYmdHMS(unixMsOld/1000, tz.Local()), interval.Milliseconds())
+				internal.Log.Error("uuid back in time: %s, sleep: %vms", internal.UnixToYmdHMS(unixMsOld/1000, tz.Local()), interval.Milliseconds())
 			}
 			time.Sleep(interval)
 		} else {
 			timeValue := unixMsOld - m.opt.Epoch
 			if timeValue > m.opt.timeValueMax || timeValue < m.opt.timeValueMin {
-				log.ErrorF("uuid timeValue out of range: %s~%s, %s", m.opt.dateTimeMin, m.opt.dateTimeMax, datetime.UnixToYmdHMS(unixMsNow/1000, tz.Local()))
+				internal.Log.Error("uuid timeValue out of range: %s~%s, %s", m.opt.dateTimeMin, m.opt.dateTimeMax, internal.UnixToYmdHMS(unixMsNow/1000, tz.Local()))
 				time.Sleep(time.Second)
 				continue
 			}
@@ -102,18 +101,18 @@ func (m *FastGenerator) genUUIDLast() int64 {
 	for {
 		uuid = atomic.LoadInt64(&m.uuid)
 		unixMsOld = (uuid >> m.opt.timeShift) + m.opt.Epoch
-		unixMsNow = datetime.UnixMs()
+		unixMsNow = internal.UnixMs()
 		if unixMsNow < unixMsOld {
 			interval := time.Duration(unixMsOld-unixMsNow) * time.Millisecond
 			if interval > backTime { //时间回拨超过1秒 一般
-				log.ErrorF("uuid back in time: %s, sleep: %vms", datetime.UnixToYmdHMS(unixMsOld/1000, tz.Local()), interval.Milliseconds())
+				internal.Log.Error("uuid back in time: %s, sleep: %vms", internal.UnixToYmdHMS(unixMsOld/1000, tz.Local()), interval.Milliseconds())
 			}
 			time.Sleep(interval)
 		} else if unixMsNow == unixMsOld { //时间一样
 			index = ((uuid & m.opt.indexMax) + 1) & m.opt.indexMax
 			timeValue := unixMsNow - m.opt.Epoch
 			if timeValue > m.opt.timeValueMax || timeValue < m.opt.timeValueMin {
-				log.ErrorF("uuid timeValue out of range: %s~%s, %s", m.opt.dateTimeMin, m.opt.dateTimeMax, datetime.UnixToYmdHMS(unixMsNow/1000, tz.Local()))
+				internal.Log.Error("uuid timeValue out of range: %s~%s, %s", m.opt.dateTimeMin, m.opt.dateTimeMax, internal.UnixToYmdHMS(unixMsNow/1000, tz.Local()))
 				time.Sleep(time.Second)
 				continue
 			}

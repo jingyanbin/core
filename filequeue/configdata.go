@@ -9,12 +9,6 @@ import (
 	"sync/atomic"
 )
 
-var log = internal.GetStdoutLogger()
-
-func SetLogger(logger internal.ILogger) {
-	log = logger
-}
-
 const msgEOF byte = 27 //文件结束符
 
 const byteMB1 = 1024 * 1024 //1MB
@@ -23,7 +17,7 @@ func MBToByteCount(mb int64) int64 {
 	return mb * byteMB1
 }
 
-//配置数据基础结构
+// 配置数据基础结构
 type configDataBase struct {
 	filename string   //配置文件名
 	f        *os.File //配置文件
@@ -38,7 +32,7 @@ func (m *configDataBase) SetFsync(fsync bool) {
 	}
 }
 
-//同步
+// 同步
 func (m *configDataBase) Sync() error {
 	if m.f == nil {
 		return nil
@@ -46,7 +40,7 @@ func (m *configDataBase) Sync() error {
 	return m.f.Sync()
 }
 
-//关闭
+// 关闭
 func (m *configDataBase) Close() error {
 	if m.f == nil {
 		return nil
@@ -54,7 +48,7 @@ func (m *configDataBase) Close() error {
 	return m.f.Close()
 }
 
-//重新打开
+// 重新打开
 func (m *configDataBase) reopen(force bool) error {
 	if m.f == nil || force {
 		if m.f != nil {
@@ -71,7 +65,7 @@ func (m *configDataBase) reopen(force bool) error {
 	return nil
 }
 
-//加载配置参数
+// 加载配置参数
 func (m *configDataBase) Load(numCount int) ([]int64, error) {
 	data, err := ioutil.ReadFile(m.filename)
 	if err != nil {
@@ -93,7 +87,7 @@ func (m *configDataBase) Load(numCount int) ([]int64, error) {
 	}
 }
 
-//保存配置数据
+// 保存配置数据
 func (m *configDataBase) Save(clear bool, nums ...int64) (err error) {
 	if err = m.reopen(false); err != nil {
 		return err
@@ -127,7 +121,7 @@ func (m *configDataBase) Save(clear bool, nums ...int64) (err error) {
 	return err
 }
 
-//pusher 配置
+// pusher 配置
 type configDataPusher struct {
 	option *Option
 	configDataBase
@@ -169,7 +163,7 @@ func (m *configDataPusher) Save() error {
 	return m.configDataBase.Save(false, m.index, m.count)
 }
 
-//popper配置
+// popper配置
 type configDataPopper struct {
 	option *Option
 	configDataBase

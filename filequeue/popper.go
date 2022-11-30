@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"github.com/jingyanbin/core/basal"
 	internal "github.com/jingyanbin/core/internal"
+	"github.com/jingyanbin/core/log"
 	"io"
 	"os"
 	"sync"
@@ -119,7 +120,7 @@ func (m *fileQueuePopper) isExistNext() bool {
 	filename := m.conf.option.getMsgFileName(m.conf.index + 1)
 	has, err := internal.IsExist(filename)
 	if err != nil {
-		log.ErrorF("FileQueuePopper isExistNext error: %v, %v", err, filename)
+		internal.Log.Error("FileQueuePopper isExistNext error: %v, %v", err, filename)
 		return false
 	}
 	return has
@@ -145,7 +146,7 @@ func (m *fileQueuePopper) reopen(force bool) error {
 		filename := m.conf.option.getMsgFileName(m.conf.index)
 		has, err := basal.IsExist(filename)
 		if err != nil {
-			log.ErrorF("FileQueuePopper reopen error: %v", err)
+			internal.Log.Error("FileQueuePopper reopen error: %v", err)
 		}
 		if !has {
 			return io.EOF
@@ -206,7 +207,7 @@ func (m *fileQueuePopper) PopFrontBlock() (line []byte, ok bool) {
 			}
 		} else {
 			interval = time.Second
-			log.ErrorF("FileQueuePopper PopFrontBlock error: %v", err)
+			log.Error("FileQueuePopper PopFrontBlock error: %v", err)
 		}
 		if interval > 0 {
 			time.Sleep(interval)
@@ -280,7 +281,7 @@ func (m *fileQueuePopper) popTo(handler PopHandler) {
 			}, func(stack string, e error) {
 				popped = false
 				exit = false
-				log.ErrorF("FileQueuePopper popTo error: %v, %v", stack, string(data))
+				internal.Log.Error("FileQueuePopper popTo error: %v, %v", stack, string(data))
 			})
 			if exit {
 				atomic.StoreInt32(&m.closed, 1)
@@ -288,7 +289,7 @@ func (m *fileQueuePopper) popTo(handler PopHandler) {
 			if popped {
 				ok, err2 := m.DiscardFront()
 				if !ok || err != nil {
-					log.ErrorF("FileQueuePopper popTo DiscardFront error: %v, %v", ok, err2)
+					internal.Log.Error("FileQueuePopper popTo DiscardFront error: %v, %v", ok, err2)
 				}
 				interval = 0
 			} else {
@@ -300,7 +301,7 @@ func (m *fileQueuePopper) popTo(handler PopHandler) {
 			}
 		} else {
 			interval = time.Second
-			log.ErrorF("FileQueuePopper popTo error: %v", err)
+			internal.Log.Error("FileQueuePopper popTo error: %v", err)
 		}
 		m.mu.Unlock()
 		if interval > 0 {

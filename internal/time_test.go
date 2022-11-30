@@ -1,6 +1,8 @@
-package datetime
+package internal
 
-import "testing"
+import (
+	"testing"
+)
 import "time"
 import "github.com/jingyanbin/core/timezone"
 
@@ -62,7 +64,7 @@ import "github.com/jingyanbin/core/timezone"
 //	}
 //}
 
-//90 ns/op
+// 90 ns/op
 func BenchmarkDateTimeFormatToUnix(b *testing.B) {
 	dtStr := "2021-11-23 16:30:00"
 	b.ResetTimer()
@@ -71,7 +73,7 @@ func BenchmarkDateTimeFormatToUnix(b *testing.B) {
 	}
 }
 
-//175 ns/op
+// 175 ns/op
 func BenchmarkTimeFormatToUnix(b *testing.B) {
 	dtStr := "2021-11-23 16:30:00"
 	b.ResetTimer()

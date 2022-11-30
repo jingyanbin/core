@@ -27,7 +27,7 @@ func (m *Mutex) Lock() {
 				if cha := now - m.lockedTime; cha > lockTimeout {
 					name, file, line := internal.CallerInFunc(2)
 					stack := Sprintf("%s(%s:%d)", name, file, line)
-					log.ErrorF("please check for deadlock Mutex Lock, 长时间未释放写锁(重复加锁,递归加锁,未释放锁等): %s, %ds", stack, cha/1000)
+					internal.Log.Error("please check for deadlock Mutex Lock, 长时间未释放写锁(重复加锁,递归加锁,未释放锁等): %s, %ds", stack, cha/1000)
 					time.Sleep(time.Second)
 					continue
 				}
@@ -72,7 +72,7 @@ func (m *RWMutex) Lock() {
 				if cha := now - m.lockedTime; cha > lockTimeout {
 					name, file, line := internal.CallerInFunc(2)
 					stack := Sprintf("%s(%s:%d)", name, file, line)
-					log.ErrorF("please check for deadlock RWMutex Lock, 长时间未释放写锁(重复加锁,递归加锁,未释放锁等): %s, %ds", stack, cha/1000)
+					internal.Log.Error("please check for deadlock RWMutex Lock, 长时间未释放写锁(重复加锁,递归加锁,未释放锁等): %s, %ds", stack, cha/1000)
 					time.Sleep(time.Second)
 					continue
 				}
@@ -101,7 +101,7 @@ func (m *RWMutex) RLock() {
 				if cha := now - m.lockedTime; cha > lockTimeout {
 					name, file, line := internal.CallerInFunc(2)
 					stack := Sprintf("%s(%s:%d)", name, file, line)
-					log.ErrorF("please check for deadlock RWMutex RLock, 长时间未释放写锁(重复加锁,递归加锁,未释放锁等): %s, %ds", stack, cha/1000)
+					internal.Log.Error("please check for deadlock RWMutex RLock, 长时间未释放写锁(重复加锁,递归加锁,未释放锁等): %s, %ds", stack, cha/1000)
 					time.Sleep(time.Second)
 					continue
 				}

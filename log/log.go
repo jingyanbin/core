@@ -1,70 +1,72 @@
 package log
 
 import (
-	"github.com/jingyanbin/core/datetime"
 	"github.com/jingyanbin/core/internal"
 )
 
-//import . "github.com/jingyanbin/basal"
-//import . "github.com/jingyanbin/datetime"
+type LOGGER_LEVEL = internal.LOGGER_LEVEL
 
-func SetLevel(level int) {
-	log.SetLevel(level)
+const (
+	DEBUG = internal.DEBUG
+	INFO  = internal.INFO
+	WARN  = internal.WARN
+	ERROR = internal.ERROR
+	FATAL = internal.FATAL
+	OFF   = internal.OFF
+)
+
+func SetILogger(logger internal.ILogger) {
+	internal.Log = logger
 }
 
-func AddHandler(handler logWriter) {
-	log.AddHandler(handler)
+func GetILogger() internal.ILogger {
+	return internal.Log
 }
 
-func SetAsync(async bool) {
-	log.SetAsync(async)
+func SetLevel(level LOGGER_LEVEL) {
+	internal.StdLog.SetLevel(level)
 }
 
-func Debug(v ...interface{}) {
-	log.output(LOG_LEVEL_DEBUG, v...)
+func Debug(v ...any) {
+	if internal.StdLog.Level() > DEBUG {
+		return
+	}
+	file, line := internal.CallerShort(internal.LogSkip)
+	internal.StdLog.Output("D", file, line, v...)
 }
 
-func Info(v ...interface{}) {
-	log.output(LOG_LEVEL_INFO, v...)
+func Info(v ...any) {
+	if internal.StdLog.Level() > INFO {
+		return
+	}
+	file, line := internal.CallerShort(internal.LogSkip)
+	internal.StdLog.Output("I", file, line, v...)
 }
 
-func Warn(v ...interface{}) {
-	log.output(LOG_LEVEL_WARN, v...)
+func Warn(v ...any) {
+	if internal.StdLog.Level() > WARN {
+		return
+	}
+	file, line := internal.CallerShort(internal.LogSkip)
+	internal.StdLog.Output("W", file, line, v...)
 }
 
-func Error(v ...interface{}) {
-	log.output(LOG_LEVEL_ERROR, v...)
+func Error(v ...any) {
+	if internal.StdLog.Level() > ERROR {
+		return
+	}
+	file, line := internal.CallerShort(internal.LogSkip)
+	internal.StdLog.Output("E", file, line, v...)
 }
 
-func Fatal(v ...interface{}) {
-	log.output(LOG_LEVEL_FATAL, v...)
+func Fatal(v ...any) {
+	if internal.StdLog.Level() > FATAL {
+		return
+	}
+	file, line := internal.CallerShort(internal.LogSkip)
+	internal.StdLog.Output("F", file, line, v...)
 }
 
-func DebugF(format string, v ...interface{}) {
-	log.outputf(LOG_LEVEL_DEBUG, format, v...)
-}
-
-func InfoF(format string, v ...interface{}) {
-	log.outputf(LOG_LEVEL_INFO, format, v...)
-}
-
-func WarnF(format string, v ...interface{}) {
-	log.outputf(LOG_LEVEL_WARN, format, v...)
-}
-
-func ErrorF(format string, v ...interface{}) {
-	log.outputf(LOG_LEVEL_ERROR, format, v...)
-}
-
-func FatalF(format string, v ...interface{}) {
-	log.outputf(LOG_LEVEL_FATAL, format, v...)
-}
-
-func SetFormatHeader(formatHeader func(buf *internal.Buffer, level string, line int, file string, dt *datetime.DateTime)) {
-	log.SetFormatHeader(formatHeader)
-}
-
-func Wait() { //等待日志模块退出
-	loggerMgr.Wait()
-	log.Wait()
+func Close() {
+	internal.StdLog.Close()
 }

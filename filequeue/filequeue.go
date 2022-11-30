@@ -30,7 +30,7 @@ func (m *FileQueue) Close() {
 	m.popper.Close()
 	m.pusher.Close()
 	if m.pusher.conf.option.PrintInfoSec > 0 {
-		log.InfoF("file queue close info: %s", m.Info())
+		internal.Log.Info("file queue close info: %s", m.Info())
 	}
 }
 
@@ -57,7 +57,7 @@ func (m *FileQueue) run(nSec int) {
 	for !m.pusher.Closed() || !m.popper.Closed() {
 		select {
 		case <-ticker.C:
-			log.InfoF("file queue run info: %s", m.Info())
+			internal.Log.Info("file queue run info: %s", m.Info())
 		}
 	}
 }
@@ -81,7 +81,7 @@ func NewFileQueue(option Option, popHandler PopHandler) (*FileQueue, error) {
 	}
 	if option.PrintInfoSec > 0 {
 		go q.run(option.PrintInfoSec)
-		log.InfoF("file queue new info: %s", q.Info())
+		internal.Log.Info("file queue new info: %s", q.Info())
 	}
 	return q, nil
 }

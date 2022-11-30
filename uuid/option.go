@@ -1,17 +1,10 @@
 package uuid
 
 import (
-	"github.com/jingyanbin/core/datetime"
 	"github.com/jingyanbin/core/internal"
 	tz "github.com/jingyanbin/core/timezone"
 	"time"
 )
-
-var log = internal.GetStdoutLogger()
-
-func SetLogger(logger internal.ILogger) {
-	log = logger
-}
 
 const backTime = time.Second
 
@@ -66,11 +59,11 @@ func (m *Option) init() {
 	if m.WorkerId > m.workerIdMax || m.WorkerId < 1 {
 		panic(internal.NewError("uuid option WorkerId out of range: 1~%d, %d", m.workerIdMax, m.WorkerId))
 	}
-	m.dateTimeMin = datetime.UnixToYmdHMS((m.Epoch+m.timeValueMin)/1000, tz.Local())
-	m.dateTimeMax = datetime.UnixToYmdHMS((m.Epoch+m.timeValueMax)/1000, tz.Local())
+	m.dateTimeMin = internal.UnixToYmdHMS((m.Epoch+m.timeValueMin)/1000, tz.Local())
+	m.dateTimeMax = internal.UnixToYmdHMS((m.Epoch+m.timeValueMax)/1000, tz.Local())
 	nYear := m.timeValueMax / (3600 * 24 * 366 * 1000)
 	//log.InfoF("uuid option time range: %v, %v, nYear: %v", m.dateTimeMin, m.dateTimeMax, nYear)
-	now := datetime.UnixMs()
+	now := internal.UnixMs()
 	if now-m.Epoch < m.timeValueMin {
 		panic(internal.NewError("uuid option now time less than time min: %v, nYear: %v", m.dateTimeMin, nYear))
 	}
@@ -81,6 +74,6 @@ func (m *Option) init() {
 
 func (m *Option) info() string {
 	nYear := (m.timeValueMax - m.timeValueMin) / (3600 * 24 * 365 * 1000)
-	remain := (m.timeValueMax + m.Epoch - datetime.UnixMs()) / (3600 * 24 * 365 * 1000)
+	remain := (m.timeValueMax + m.Epoch - internal.UnixMs()) / (3600 * 24 * 365 * 1000)
 	return internal.Sprintf("uuid option index max: %d, worker id max: %d, time range: %s, %s, nYear: %d, remain: %d", m.indexMax, m.workerIdMax, m.dateTimeMin, m.dateTimeMax, nYear, remain)
 }

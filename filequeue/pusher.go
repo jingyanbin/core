@@ -167,7 +167,7 @@ func (m *fileQueuePusher) pushOne(data []byte) (err error) {
 
 func (m *fileQueuePusher) pushBatch(buf *batchBuffer) {
 	if err := m.push(buf.Bytes()); err != nil {
-		log.ErrorF("FileQueuePusher pushBuffer error: %v, data: %v", err, string(buf.Bytes()))
+		internal.Log.Error("FileQueuePusher pushBuffer error: %v, data: %v", err, string(buf.Bytes()))
 	} else {
 		m.conf.AddCount(buf.Count())
 	}
@@ -208,7 +208,7 @@ func (m *fileQueuePusher) run() {
 					timer.Reset(time.Second)
 				}
 			} else {
-				log.ErrorF("FileQueuePusher run Add error: %v, data: %v", err, string(data))
+				internal.Log.Error("FileQueuePusher run Add error: %v, data: %v", err, string(data))
 			}
 
 		case <-timer.C:
