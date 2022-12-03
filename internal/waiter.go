@@ -31,24 +31,28 @@ func (m *Waiter) Add(n uint32) {
 }
 
 func (m *Waiter) Done() {
+	m.init.Do(m.toInit)
 	if m.toAdd(-1) < 1 {
-		m.init.Do(m.toInit)
 		m.closed.Do(m.toClose)
 	}
 }
 
-func (m *Waiter) Wait(timeout time.Duration) {
+// 返回false表示超时
+func (m *Waiter) Wait(timeout time.Duration) bool {
 	m.init.Do(m.toInit)
 	if timeout > 0 {
 		ticker := time.NewTimer(timeout)
 		defer ticker.Stop()
 		select {
 		case <-m.ch:
+			return true
 		case <-ticker.C:
+			return false
 		}
 	} else {
 		select {
 		case <-m.ch:
+			return true
 		}
 	}
 }

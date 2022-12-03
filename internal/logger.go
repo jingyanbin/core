@@ -102,6 +102,7 @@ func (m *StdLogger) Output(level string, file string, line int, v ...interface{}
 		context = fmt.Sprint(v...)
 	}
 	buf := NewBuffer(200 + len(context))
+	m.dt.Flush()
 	m.formatHeader(buf, level, file, line, m.dt)
 	buf.AppendString(context)
 	buf.AppendByte('\n')
