@@ -1,5 +1,7 @@
 package internal
 
+import _ "unsafe"
+
 const smalls = "00010203040506070809" +
 	"10111213141516171819" +
 	"20212223242526272829" +
@@ -12,6 +14,8 @@ const smalls = "00010203040506070809" +
 	"90919293949596979899"
 
 // ItoA w>数字宽度时补0, w <=数字宽度时不补
+//
+//go:linkname ItoA github.com/jingyanbin/core/basal.ItoA
 func ItoA(dst *[]byte, i int, w int) {
 	var b = [20]byte{48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48}
 	var pos = 20
@@ -48,6 +52,8 @@ func ItoA(dst *[]byte, i int, w int) {
 }
 
 // ItoAW 强制取数字宽度的w,足够时截断,不足时补0
+//
+//go:linkname ItoAW github.com/jingyanbin/core/basal.ItoAW
 func ItoAW(dst *[]byte, i int, w int) {
 	var b = [20]byte{48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48}
 	var pos = 20

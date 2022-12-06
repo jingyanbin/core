@@ -1,7 +1,6 @@
 package basal
 
 import (
-	"github.com/jingyanbin/core/internal"
 	"sync/atomic"
 	"time"
 	"unsafe"
@@ -75,7 +74,7 @@ const PARALLEL_ACQUIRE_CLOSED PARALLEL_ACQUIRE_STATE = 3  //关闭
 //	@receiver m
 //	@return state 状态
 func (m *ParallelController) Acquire() (state PARALLEL_ACQUIRE_STATE) {
-	defer internal.ExceptionError(func(e error) {
+	defer ExceptionError(func(e error) {
 		state = PARALLEL_ACQUIRE_CLOSED
 	})
 	if m.block {

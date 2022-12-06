@@ -3,7 +3,7 @@ package filequeue
 import (
 	"encoding/binary"
 	"github.com/jingyanbin/core/basal"
-	internal "github.com/jingyanbin/core/internal"
+	"github.com/jingyanbin/core/internal"
 	"github.com/jingyanbin/core/log"
 	"io"
 	"os"
@@ -118,9 +118,9 @@ func (m *fileQueuePopper) closeFile() {
 
 func (m *fileQueuePopper) isExistNext() bool {
 	filename := m.conf.option.getMsgFileName(m.conf.index + 1)
-	has, err := internal.IsExist(filename)
+	has, err := basal.IsExist(filename)
 	if err != nil {
-		internal.Log.Error("FileQueuePopper isExistNext error: %v, %v", err, filename)
+		log.Error("FileQueuePopper isExistNext error: %v, %v", err, filename)
 		return false
 	}
 	return has
@@ -146,7 +146,7 @@ func (m *fileQueuePopper) reopen(force bool) error {
 		filename := m.conf.option.getMsgFileName(m.conf.index)
 		has, err := basal.IsExist(filename)
 		if err != nil {
-			internal.Log.Error("FileQueuePopper reopen error: %v", err)
+			log.Error("FileQueuePopper reopen error: %v", err)
 		}
 		if !has {
 			return io.EOF
@@ -230,7 +230,7 @@ func (m *fileQueuePopper) PopFront() (line []byte, err error) {
 		return nil, err
 	}
 	if !ok {
-		return nil, basal.NewError("DiscardFront failed")
+		return nil, internal.NewError("DiscardFront failed")
 	}
 	return msg, nil
 }
@@ -276,12 +276,12 @@ func (m *fileQueuePopper) popTo(handler PopHandler) {
 		m.mu.Lock()
 		if data, err := m.Front(); err == nil {
 			popped := false
-			basal.Try(func() {
+			internal.Try(func() {
 				popped, exit = handler(data)
 			}, func(stack string, e error) {
 				popped = false
 				exit = false
-				internal.Log.Error("FileQueuePopper popTo error: %v, %v", stack, string(data))
+				log.Error("FileQueuePopper popTo error: %v, %v", stack, string(data))
 			})
 			if exit {
 				atomic.StoreInt32(&m.closed, 1)
@@ -289,7 +289,7 @@ func (m *fileQueuePopper) popTo(handler PopHandler) {
 			if popped {
 				ok, err2 := m.DiscardFront()
 				if !ok || err != nil {
-					internal.Log.Error("FileQueuePopper popTo DiscardFront error: %v, %v", ok, err2)
+					log.Error("FileQueuePopper popTo DiscardFront error: %v, %v", ok, err2)
 				}
 				interval = 0
 			} else {
@@ -301,7 +301,7 @@ func (m *fileQueuePopper) popTo(handler PopHandler) {
 			}
 		} else {
 			interval = time.Second
-			internal.Log.Error("FileQueuePopper popTo error: %v", err)
+			log.Error("FileQueuePopper popTo error: %v", err)
 		}
 		m.mu.Unlock()
 		if interval > 0 {

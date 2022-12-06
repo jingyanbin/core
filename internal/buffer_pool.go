@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 )
@@ -74,18 +75,18 @@ func (m *bufferPools) Info() string {
 		if pool.freeCount > 0 {
 			avg = pool.freeTotal / uint64(pool.freeCount)
 		}
-		s += Sprintf("\nid: %d, free total: %d, free/new: %d/%d, avg: %d", i, pool.freeTotal, pool.freeCount, pool.newCount, avg)
+		s += fmt.Sprintf("\nid: %d, free total: %d, free/new: %d/%d, avg: %d", i, pool.freeTotal, pool.freeCount, pool.newCount, avg)
 	}
 	return s
 }
 
-func (m *bufferPools) New(size int) *Buffer {
+func (m *bufferPools) new(size int) *Buffer {
 	bufferSize := minBufferSize * bufferLevel
 	index := size / bufferSize
 	if size%bufferSize == 0 {
 		index--
 	}
-	//log.InfoF("================New: %v", index)
+	//log.InfoF("================new: %v", index)
 	if index < 0 {
 		return m[0].Get()
 	} else if index < bufferPoolNumber {
@@ -95,7 +96,7 @@ func (m *bufferPools) New(size int) *Buffer {
 	}
 }
 
-func (m *bufferPools) Free(buf *Buffer) {
+func (m *bufferPools) free(buf *Buffer) {
 	index := buf.index
 	if index < bufferPoolNumber {
 		m[index].Put(buf)

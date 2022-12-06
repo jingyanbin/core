@@ -1,11 +1,11 @@
-package internal
+package basal
 
 import (
 	"unsafe"
 	_ "unsafe"
 )
 
-//var LinkListNodePool = sync.Pool{New: func() interface{} { return new(LinkListNode) }}
+//var LinkListNodePool = sync.Pool{new: func() interface{} { return new(LinkListNode) }}
 
 type LinkListNode struct {
 	next  *LinkListNode
@@ -14,12 +14,11 @@ type LinkListNode struct {
 	Value unsafe.Pointer
 }
 
-////go:linkname NewLinkListNode github.com/jingyanbin/core/basal.NewLinkListNode
 //func NewLinkListNode() *LinkListNode {
 //	return LinkListNodePool.Get().(*LinkListNode)
 //}
 
-//func (m *LinkListNode) Free() {
+//func (m *LinkListNode) free() {
 //	m.prev = nil
 //	m.next = nil
 //	m.Value = nil
@@ -53,7 +52,6 @@ func (m *LinkList) Init() *LinkList {
 	return m
 }
 
-//go:linkname NewLinkList github.com/jingyanbin/core/basal.NewLinkList
 func NewLinkList() *LinkList { return new(LinkList).Init() }
 
 func (m *LinkList) Len() int { return m.len }

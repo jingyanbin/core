@@ -1,21 +1,21 @@
-package unicodeex
+package basal
 
 import (
-	"github.com/jingyanbin/core/internal"
 	"strconv"
 )
 
 // 转换为unicode编码
 func ToRune(s string) rune {
 	if len(s) < 3 || len(s) > 10 {
-		panic(internal.NewError("ToRune error: %v", s))
+
+		panic(NewError("ToRune error: %v", s))
 	}
 	if s[0] != '\\' || s[1] != 'u' {
-		panic(internal.NewError("ToRune error: %v", s))
+		panic(NewError("ToRune error: %v", s))
 	}
 	n, err := strconv.ParseUint(s[2:], 16, 32)
 	if err != nil {
-		panic(internal.NewError("ToRune error: %v, %v", s, err))
+		panic(NewError("ToRune error: %v, %v", s, err))
 	}
 	return rune(n)
 }

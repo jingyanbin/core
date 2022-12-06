@@ -1,7 +1,9 @@
 package filequeue
 
 import (
-	"github.com/jingyanbin/core/internal"
+	"fmt"
+	"github.com/jingyanbin/core/basal"
+	"github.com/jingyanbin/core/log"
 	"time"
 )
 
@@ -12,10 +14,10 @@ type FileQueue struct {
 }
 
 func (m *FileQueue) Info() string {
-	name := internal.Path.Join(m.option.ConfDataDir, m.option.Name)
+	name := basal.Path.Join(m.option.ConfDataDir, m.option.Name)
 	chLen, chSize := m.pusher.ChanLenAndSize()
 	c1, c2 := m.popper.Count(), m.pusher.Count()
-	return internal.Sprintf("name: %s, push chan: %d/%d, popped/pushed: %d/%d, len: %d", name, chLen, chSize, c1, c2, c2-c1)
+	return fmt.Sprintf("name: %s, push chan: %d/%d, popped/pushed: %d/%d, len: %d", name, chLen, chSize, c1, c2, c2-c1)
 }
 
 func (m *FileQueue) ClosePusher() {
@@ -30,7 +32,7 @@ func (m *FileQueue) Close() {
 	m.popper.Close()
 	m.pusher.Close()
 	if m.pusher.conf.option.PrintInfoSec > 0 {
-		internal.Log.Info("file queue close info: %s", m.Info())
+		log.Info("file queue close info: %s", m.Info())
 	}
 }
 
@@ -57,7 +59,7 @@ func (m *FileQueue) run(nSec int) {
 	for !m.pusher.Closed() || !m.popper.Closed() {
 		select {
 		case <-ticker.C:
-			internal.Log.Info("file queue run info: %s", m.Info())
+			log.Info("file queue run info: %s", m.Info())
 		}
 	}
 }
@@ -81,7 +83,7 @@ func NewFileQueue(option Option, popHandler PopHandler) (*FileQueue, error) {
 	}
 	if option.PrintInfoSec > 0 {
 		go q.run(option.PrintInfoSec)
-		internal.Log.Info("file queue new info: %s", q.Info())
+		log.Info("file queue new info: %s", q.Info())
 	}
 	return q, nil
 }

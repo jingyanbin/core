@@ -1,7 +1,8 @@
 package filequeue
 
 import (
-	internal "github.com/jingyanbin/core/internal"
+	"github.com/jingyanbin/core/basal"
+	"github.com/jingyanbin/core/internal"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -55,7 +56,7 @@ func (m *configDataBase) reopen(force bool) error {
 			m.f.Sync()
 			m.f.Close()
 		}
-		f, err := internal.OpenFileB(m.filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+		f, err := basal.OpenFileB(m.filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 		if err != nil {
 			m.f = nil
 			return err

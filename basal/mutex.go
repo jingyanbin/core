@@ -1,7 +1,9 @@
 package basal
 
 import (
-	internal "github.com/jingyanbin/core/internal"
+	"fmt"
+	"github.com/jingyanbin/core/datetime"
+	"github.com/jingyanbin/core/log"
 	"runtime"
 	"sync"
 	"time"
@@ -18,16 +20,16 @@ func (m *Mutex) Lock() {
 	var now int64
 	var spinNum uint8
 	for !m.mu.TryLock() {
-		now = internal.UnixMs()
+		now = datetime.UnixMs()
 		if spinNum < 10 {
 			spinNum++
 			runtime.Gosched()
 		} else {
 			if m.lockedTime > 0 {
 				if cha := now - m.lockedTime; cha > lockTimeout {
-					name, file, line := internal.CallerInFunc(2)
-					stack := Sprintf("%s(%s:%d)", name, file, line)
-					internal.Log.Error("please check for deadlock Mutex Lock, 长时间未释放写锁(重复加锁,递归加锁,未释放锁等): %s, %ds", stack, cha/1000)
+					name, file, line := CallerInFunc(2)
+					stack := fmt.Sprintf("%s(%s:%d)", name, file, line)
+					log.Error("please check for deadlock Mutex Lock, 长时间未释放写锁(重复加锁,递归加锁,未释放锁等): %s, %ds", stack, cha/1000)
 					time.Sleep(time.Second)
 					continue
 				}
@@ -35,7 +37,7 @@ func (m *Mutex) Lock() {
 			time.Sleep(time.Millisecond)
 		}
 	}
-	m.lockedTime = internal.UnixMs()
+	m.lockedTime = datetime.UnixMs()
 }
 
 func (m *Mutex) Unlock() {
@@ -63,16 +65,16 @@ func (m *RWMutex) Lock() {
 	var now int64
 	var spinNum uint8
 	for !m.rw.TryLock() {
-		now = internal.UnixMs()
+		now = datetime.UnixMs()
 		if spinNum < 10 {
 			spinNum++
 			runtime.Gosched()
 		} else {
 			if m.lockedTime > 0 {
 				if cha := now - m.lockedTime; cha > lockTimeout {
-					name, file, line := internal.CallerInFunc(2)
-					stack := Sprintf("%s(%s:%d)", name, file, line)
-					internal.Log.Error("please check for deadlock RWMutex Lock, 长时间未释放写锁(重复加锁,递归加锁,未释放锁等): %s, %ds", stack, cha/1000)
+					name, file, line := CallerInFunc(2)
+					stack := fmt.Sprintf("%s(%s:%d)", name, file, line)
+					log.Error("please check for deadlock RWMutex Lock, 长时间未释放写锁(重复加锁,递归加锁,未释放锁等): %s, %ds", stack, cha/1000)
 					time.Sleep(time.Second)
 					continue
 				}
@@ -80,7 +82,7 @@ func (m *RWMutex) Lock() {
 			time.Sleep(time.Millisecond)
 		}
 	}
-	m.lockedTime = internal.UnixMs()
+	m.lockedTime = datetime.UnixMs()
 }
 
 func (m *RWMutex) Unlock() {
@@ -92,16 +94,16 @@ func (m *RWMutex) RLock() {
 	var now int64
 	var spinNum uint8
 	for !m.rw.TryRLock() {
-		now = internal.UnixMs()
+		now = datetime.UnixMs()
 		if spinNum < 10 {
 			spinNum++
 			runtime.Gosched()
 		} else {
 			if m.lockedTime > 0 {
 				if cha := now - m.lockedTime; cha > lockTimeout {
-					name, file, line := internal.CallerInFunc(2)
-					stack := Sprintf("%s(%s:%d)", name, file, line)
-					internal.Log.Error("please check for deadlock RWMutex RLock, 长时间未释放写锁(重复加锁,递归加锁,未释放锁等): %s, %ds", stack, cha/1000)
+					name, file, line := CallerInFunc(2)
+					stack := fmt.Sprintf("%s(%s:%d)", name, file, line)
+					log.Error("please check for deadlock RWMutex RLock, 长时间未释放写锁(重复加锁,递归加锁,未释放锁等): %s, %ds", stack, cha/1000)
 					time.Sleep(time.Second)
 					continue
 				}
@@ -109,7 +111,7 @@ func (m *RWMutex) RLock() {
 			time.Sleep(time.Millisecond)
 		}
 	}
-	m.lockedTime = internal.UnixMs()
+	m.lockedTime = datetime.UnixMs()
 }
 
 func (m *RWMutex) RUnlock() {

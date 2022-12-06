@@ -1,10 +1,12 @@
-package internal
+package log
 
 import (
 	"fmt"
+	"github.com/jingyanbin/core/internal"
 	"os"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 type LOGGER_LEVEL int
@@ -18,49 +20,41 @@ const (
 	OFF   LOGGER_LEVEL = 5
 )
 
-const LogSkip = 2
-
-type ILogger interface {
-	Info(v ...any)
-	Error(v ...any)
-}
+const logSkip = 2
 
 func NewStdLogger(size int) *StdLogger {
 	logger := &StdLogger{}
-	logger.ch = make(chan *Buffer, size)
-	logger.dt = Now()
+	logger.ch = make(chan *internal.Buffer, size)
 	logger.wg.Add(1)
 	go logger.run()
 	return logger
 }
 
-var StdLog = NewStdLogger(10000)
-var Log ILogger = StdLog
+var log = NewStdLogger(10000)
 
 type StdLogger struct {
 	level  LOGGER_LEVEL
-	ch     chan *Buffer
+	ch     chan *internal.Buffer
 	closed int32
-	dt     *DateTime
 	wg     sync.WaitGroup
 }
 
-func (m *StdLogger) formatHeader(buf *Buffer, level string, file string, line int, dt *DateTime) {
+func (m *StdLogger) formatHeader(buf *internal.Buffer, level string, file string, line int, dt time.Time) {
 	buf.AppendByte('[')
 	buf.AppendString(level)
 	buf.AppendByte(']')
 	buf.AppendByte('[')
 	buf.AppendInt(dt.Year(), 4)
 	buf.AppendByte('-')
-	buf.AppendInt(dt.Month(), 2)
+	buf.AppendInt(int(dt.Month()), 2)
 	buf.AppendByte('-')
 	buf.AppendInt(dt.Day(), 2)
 	buf.AppendByte(' ')
 	buf.AppendInt(dt.Hour(), 2)
 	buf.AppendByte(':')
-	buf.AppendInt(dt.Min(), 2)
+	buf.AppendInt(dt.Minute(), 2)
 	buf.AppendByte(':')
-	buf.AppendInt(dt.Sec(), 2)
+	buf.AppendInt(dt.Second(), 2)
 	buf.AppendByte(']')
 	buf.AppendByte('[')
 	buf.AppendString(file)
@@ -76,21 +70,21 @@ func (m *StdLogger) run() {
 	}
 }
 
-func (m *StdLogger) write(buf *Buffer) {
-	defer ExceptionError(nil)
+func (m *StdLogger) write(buf *internal.Buffer) {
+	defer internal.ExceptionError(nil)
 	os.Stdout.Write(buf.Bytes())
 	buf.Free()
 }
 
-func (m *StdLogger) push(buf *Buffer) {
+func (m *StdLogger) push(buf *internal.Buffer) {
 	if m.closed == 1 {
 		return
 	}
-	defer ExceptionError(nil)
+	defer internal.ExceptionError(nil)
 	m.ch <- buf
 }
 
-func (m *StdLogger) Output(level string, file string, line int, v ...interface{}) {
+func (m *StdLogger) output(level string, file string, line int, v ...interface{}) {
 	var context string
 	if len(v) > 1 {
 		if format, ok := v[0].(string); ok {
@@ -101,9 +95,8 @@ func (m *StdLogger) Output(level string, file string, line int, v ...interface{}
 	} else {
 		context = fmt.Sprint(v...)
 	}
-	buf := NewBuffer(200 + len(context))
-	m.dt.Flush()
-	m.formatHeader(buf, level, file, line, m.dt)
+	buf := internal.NewBuffer(200 + len(context))
+	m.formatHeader(buf, level, file, line, time.Now())
 	buf.AppendString(context)
 	buf.AppendByte('\n')
 	m.push(buf)
@@ -131,38 +124,38 @@ func (m *StdLogger) Debug(v ...any) {
 	if m.level > DEBUG {
 		return
 	}
-	file, line := CallerShort(LogSkip)
-	m.Output("D", file, line, v...)
+	file, line := internal.CallerShort(logSkip)
+	m.output("D", file, line, v...)
 }
 
 func (m *StdLogger) Info(v ...any) {
 	if m.level > INFO {
 		return
 	}
-	file, line := CallerShort(LogSkip)
-	m.Output("I", file, line, v...)
+	file, line := internal.CallerShort(logSkip)
+	m.output("I", file, line, v...)
 }
 
 func (m *StdLogger) Warn(v ...any) {
 	if m.level > WARN {
 		return
 	}
-	file, line := CallerShort(LogSkip)
-	m.Output("W", file, line, v...)
+	file, line := internal.CallerShort(logSkip)
+	m.output("W", file, line, v...)
 }
 
 func (m *StdLogger) Error(v ...any) {
 	if m.level > ERROR {
 		return
 	}
-	file, line := CallerShort(LogSkip)
-	m.Output("E", file, line, v...)
+	file, line := internal.CallerShort(logSkip)
+	m.output("E", file, line, v...)
 }
 
 func (m *StdLogger) Fatal(v ...any) {
 	if m.level > FATAL {
 		return
 	}
-	file, line := CallerShort(LogSkip)
-	m.Output("F", file, line, v...)
+	file, line := internal.CallerShort(logSkip)
+	m.output("F", file, line, v...)
 }

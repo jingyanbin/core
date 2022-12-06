@@ -1,6 +1,10 @@
 package basal
 
-//有序列表
+import (
+	"fmt"
+)
+
+// 有序列表
 type SortedList struct {
 	buf         []interface{}
 	scoreRepeat bool                      //排序值是否可重复
@@ -10,7 +14,7 @@ type SortedList struct {
 }
 
 func (my *SortedList) String() string {
-	return Sprintf("%v", my.buf)
+	return fmt.Sprintf("%v", my.buf)
 }
 
 func (my *SortedList) reduceSpace() {

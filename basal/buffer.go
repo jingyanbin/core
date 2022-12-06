@@ -4,8 +4,10 @@ import (
 	"github.com/jingyanbin/core/internal"
 )
 
+var BufferPool = internal.BufferPool
+
 type Buffer = internal.Buffer
 
-func NewBuffer(size int) *Buffer
-
-var BufferPool = internal.BufferPool
+func NewBuffer(size int) *Buffer {
+	return internal.NewBuffer(size)
+}

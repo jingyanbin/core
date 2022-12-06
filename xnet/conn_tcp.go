@@ -2,7 +2,8 @@ package xnet
 
 import (
 	"encoding/binary"
-	"github.com/jingyanbin/core/internal"
+	internal2 "github.com/jingyanbin/basal"
+	"github.com/jingyanbin/core/log"
 	"math/rand"
 	"net"
 	"sync/atomic"
@@ -25,7 +26,7 @@ func NewTCPListener(address string) (lis *net.TCPListener, err error) {
 func ConnectTCP(addr string, timeout time.Duration) (*net.TCPConn, error) {
 	conn, err := net.DialTimeout("tcp", addr, timeout)
 	if err != nil {
-		internal.Log.Error("tcp client connect server failed: %s, %s", addr, err.Error())
+		log.Error("tcp client connect server failed: %s, %s", addr, err.Error())
 		return nil, err
 	}
 	return conn.(*net.TCPConn), nil
@@ -71,20 +72,20 @@ func (m *TCPConn) RemoteAddr() string {
 func (m *TCPConn) Recv() ([]byte, bool) {
 	err := m.conn.SetReadDeadline(time.Now().Add(option.RecvTimeout))
 	if err != nil {
-		internal.Log.Error("tcp recv set read deadline error: %s, %s", m.RemoteAddr(), err.Error())
+		log.Error("tcp recv set read deadline error: %s, %s", m.RemoteAddr(), err.Error())
 		return nil, false
 	}
 	var n int
 	n, err = m.read(m.head, netHeaderSize)
 	if err != nil {
-		internal.Log.Error("tcp recv head error: %s, %d/%d, %s", m.RemoteAddr(), n, netHeaderSize, err.Error())
+		log.Error("tcp recv head error: %s, %d/%d, %s", m.RemoteAddr(), n, netHeaderSize, err.Error())
 		return nil, false
 	}
 	flag, bodyBcc, headBcc := m.head[4], m.head[5], m.head[6]
 	isEncrypt := flag&FLAG_ENCRYPT == FLAG_ENCRYPT
 	if isEncrypt {
 		if bcc := CountBCC(m.head, 0, 6); bcc != headBcc { //校验head
-			internal.Log.Error("tcp recv conn head bcc error: %s, bcc=%v, head bcc=%v", m.RemoteAddr(), bcc, headBcc)
+			log.Error("tcp recv conn head bcc error: %s, bcc=%v, head bcc=%v", m.RemoteAddr(), bcc, headBcc)
 			return nil, false
 		}
 	}
@@ -92,20 +93,20 @@ func (m *TCPConn) Recv() ([]byte, bool) {
 	content := make([]byte, length)
 	n, err = m.read(content, length)
 	if err != nil {
-		internal.Log.Error("tcp recv content error: %s, %d/%d, %s", m.RemoteAddr(), n, length, err.Error())
+		log.Error("tcp recv content error: %s, %d/%d, %s", m.RemoteAddr(), n, length, err.Error())
 		return nil, false
 	}
 	if isEncrypt {
 		if bcc := CountBCC(content, 0, length); bcc != bodyBcc {
-			internal.Log.Error("tcp recv conn body bcc error: %s, bcc=%v, body bcc=%v", m.RemoteAddr(), bcc, bodyBcc)
+			log.Error("tcp recv conn body bcc error: %s, bcc=%v, body bcc=%v", m.RemoteAddr(), bcc, bodyBcc)
 			return nil, false
 		}
 		m.crypt.Decrypt(content, 0, length)
 	}
 	if flag&FLAG_COMPRESS == FLAG_COMPRESS {
-		content, err = internal.Compress.UnGZip(content)
+		content, err = internal2.Compress.UnGZip(content)
 		if err != nil {
-			internal.Log.Error("tcp recv conn un compress error: %s, %s", m.RemoteAddr(), err.Error())
+			log.Error("tcp recv conn un compress error: %s, %s", m.RemoteAddr(), err.Error())
 			return nil, false
 		}
 	}
@@ -119,7 +120,7 @@ func (m *TCPConn) Send(msg []byte) bool {
 	if m.flag&FLAG_COMPRESS == FLAG_COMPRESS {
 		if length > netNeedCompressLength {
 			flag |= FLAG_COMPRESS
-			msg = internal.Compress.GZip(msg)
+			msg = internal2.Compress.GZip(msg)
 			length = len(msg)
 		}
 	}
@@ -138,7 +139,7 @@ func (m *TCPConn) Send(msg []byte) bool {
 
 	n, err := m.write(content, max)
 	if err != nil {
-		internal.Log.Error("tcp send error: %s, %d/%d, %s", m.RemoteAddr(), n, max, err.Error())
+		log.Error("tcp send error: %s, %d/%d, %s", m.RemoteAddr(), n, max, err.Error())
 		return false
 	}
 	return true
@@ -156,10 +157,10 @@ func (m *TCPConn) HandshakeSend(flag byte) bool {
 	}
 	n, err := m.write(buf, 9)
 	if err != nil {
-		internal.Log.Error("tcp handshake send seed write error: %s, %d, %s", m.RemoteAddr(), n, err.Error())
+		log.Error("tcp handshake send seed write error: %s, %d, %s", m.RemoteAddr(), n, err.Error())
 		return false
 	}
-	internal.Log.Error("tcp handshake send seed crypt: %v", m.crypt)
+	log.Error("tcp handshake send seed crypt: %v", m.crypt)
 	return true
 }
 
@@ -167,19 +168,19 @@ func (m *TCPConn) HandshakeRecvSeed() bool {
 	buf := make([]byte, 9)
 	err := m.conn.SetReadDeadline(time.Now().Add(option.HandshakeRecvTimeout)) //超时未收到握手信息握手失败
 	if err != nil {
-		internal.Log.Error("tcp handshake recv seed read deadline error: %s, %s", m.RemoteAddr(), err.Error())
+		log.Error("tcp handshake recv seed read deadline error: %s, %s", m.RemoteAddr(), err.Error())
 		return false
 	}
 	n, err := m.read(buf, 9)
 	if err != nil {
-		internal.Log.Error("tcp handshake recv seed read error: %s, %d, %s", m.RemoteAddr(), n, err.Error())
+		log.Error("tcp handshake recv seed read error: %s, %d, %s", m.RemoteAddr(), n, err.Error())
 		return false
 	}
 	XORDecrypt(option.HandshakeSeed, buf, 0, 9)
 	m.flag = buf[0]
 	m.crypt.iSeed = binary.BigEndian.Uint32(buf[5:])
 	m.crypt.oSeed = binary.BigEndian.Uint32(buf[1:])
-	internal.Log.Error("tcp handshake recv seed crypt: %v", m.crypt)
+	log.Error("tcp handshake recv seed crypt: %v", m.crypt)
 	return true
 }
 

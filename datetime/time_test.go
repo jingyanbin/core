@@ -1,10 +1,9 @@
-package internal
+package datetime
 
 import (
 	"testing"
 )
 import "time"
-import "github.com/jingyanbin/core/timezone"
 
 //go test -bench="." -count 5
 //func BenchmarkUnix1(b *testing.B) {
@@ -69,7 +68,7 @@ func BenchmarkDateTimeFormatToUnix(b *testing.B) {
 	dtStr := "2021-11-23 16:30:00"
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		YmdHMSToUnix(dtStr, timezone.Local(), true)
+		YmdHMSToUnix(dtStr, Local(), true)
 	}
 }
 

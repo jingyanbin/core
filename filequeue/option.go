@@ -1,8 +1,8 @@
 package filequeue
 
 import (
+	"fmt"
 	"github.com/jingyanbin/core/basal"
-	internal "github.com/jingyanbin/core/internal"
 	"path/filepath"
 )
 
@@ -18,16 +18,16 @@ type Option struct {
 
 // 获得消息文件名
 func (m *Option) getMsgFileName(index int64) string {
-	name := internal.Sprintf("data.%d", index)
-	filename := internal.Path.Join(m.ConfDataDir, m.Name, "data", name)
+	name := fmt.Sprintf("data.%d", index)
+	filename := basal.Path.Join(m.ConfDataDir, m.Name, "data", name)
 
 	return filename
 }
 
 // 获得配置文件名
 func (m *Option) getConfFileName(typ string) string {
-	name := basal.Sprintf("%s.fq", typ)
-	filename := internal.Path.Join(m.ConfDataDir, m.Name, name)
+	name := fmt.Sprintf("%s.fq", typ)
+	filename := basal.Path.Join(m.ConfDataDir, m.Name, name)
 	return filename
 }
 
@@ -37,7 +37,7 @@ func (m *Option) init() {
 		m.ConfDataDir = "file_queue"
 	}
 	if !filepath.IsAbs(m.ConfDataDir) {
-		m.ConfDataDir = internal.Path.ProgramDirJoin(m.ConfDataDir)
+		m.ConfDataDir = basal.Path.ProgramDirJoin(m.ConfDataDir)
 	}
 	if m.Name == "" {
 		m.Name = "default"

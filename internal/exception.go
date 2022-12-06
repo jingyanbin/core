@@ -1,15 +1,35 @@
 package internal
 
 import (
+	"errors"
+	"fmt"
 	"runtime"
 	"runtime/debug"
 	"strings"
 	_ "unsafe"
 )
 
+//go:linkname NewError github.com/jingyanbin/core/basal.NewError
+func NewError(format string, a ...interface{}) error {
+	return errors.New(fmt.Sprintf(format, a...))
+}
+
+//go:linkname ToError github.com/jingyanbin/core/basal.ToError
+func ToError(r interface{}) (err error) {
+	switch x := r.(type) {
+	case string:
+		err = NewError(x)
+	case error:
+		err = x
+	default:
+		err = NewError("unknown error: %v", x)
+	}
+	return
+}
+
 const exceptionSkip = 3
 
-// CallerShort 调用信息短文件名
+// 调用信息短文件名
 //
 //go:linkname CallerShort github.com/jingyanbin/core/basal.CallerShort
 func CallerShort(skip int) (file string, line int) {
@@ -31,7 +51,7 @@ func CallerShort(skip int) (file string, line int) {
 	return
 }
 
-// Caller 调用信息长文件名
+// 调用信息长文件名
 //
 //go:linkname Caller github.com/jingyanbin/core/basal.Caller
 func Caller(skip int) (file string, line int) {
@@ -86,16 +106,10 @@ func formatStack(name, file string, err string, stack []byte) *Buffer {
 	return buf
 }
 
-func ExceptionError(catch func(e error)) {
-	if err := recover(); err != nil {
-		catch(ToError(err))
-	}
-}
-
 //go:linkname Exception github.com/jingyanbin/core/basal.Exception
-func Exception(catchs ...func(stack string, e error)) {
+func Exception(catch ...func(stack string, e error)) {
 	if err := recover(); err != nil {
-		if len(catchs) == 0 {
+		if len(catch) == 0 {
 			return
 		}
 		info := debug.Stack()
@@ -103,12 +117,19 @@ func Exception(catchs ...func(stack string, e error)) {
 		myErr := ToError(err)
 		myBuf := formatStack(name, file, myErr.Error(), info)
 		defer myBuf.Free()
-		for _, catch := range catchs {
-			if catch == nil {
+		for _, f := range catch {
+			if f == nil {
 				continue
 			}
-			catch(myBuf.ToString(), myErr)
+			f(myBuf.ToString(), myErr)
 		}
+	}
+}
+
+//go:linkname ExceptionError github.com/jingyanbin/core/basal.ExceptionError
+func ExceptionError(catch func(e error)) {
+	if err := recover(); err != nil {
+		catch(ToError(err))
 	}
 }
 

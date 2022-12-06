@@ -11,7 +11,6 @@ type NextNumber struct {
 	pos    int
 }
 
-//go:linkname NewNextNumber github.com/jingyanbin/core/basal.NewNextNumber
 func NewNextNumber(s string) *NextNumber {
 	return &NextNumber{s: s, length: len(s)}
 }
@@ -30,10 +29,10 @@ func (my *NextNumber) ByteByOffset(offset int) (byte, bool) {
 }
 
 // Next @description: 得到字符串中的, 下一个数字
-//@param:       jump int "跳跃字节数" 0:自动跳过非数字字符  >0:跳过固定宽度
-//@param:       w int "数字宽度" 0:自动获取数字的宽度(遇到非数字停止) >0: 获取固定宽度的数字(可能最大宽度,真实宽度可能比这个小)
-//@return:      int "得到数字"
-//@return:      error "错误信息"
+// @param:       jump int "跳跃字节数" 0:自动跳过非数字字符  >0:跳过固定宽度
+// @param:       w int "数字宽度" 0:自动获取数字的宽度(遇到非数字停止) >0: 获取固定宽度的数字(可能最大宽度,真实宽度可能比这个小)
+// @return:      int "得到数字"
+// @return:      error "错误信息"
 func (my *NextNumber) Next(jump, w int) (int, bool) {
 	pos := my.pos
 	for ; pos < my.length && (my.s[pos] < 48 || my.s[pos] > 57); pos++ {
@@ -65,7 +64,7 @@ func (my *NextNumber) Next(jump, w int) (int, bool) {
 	return num, true
 }
 
-//获取字符串中所有数字
+// 获取字符串中所有数字
 func (my *NextNumber) Numbers() []int {
 	var res []int
 	for {

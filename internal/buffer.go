@@ -2,7 +2,6 @@ package internal
 
 import (
 	"strconv"
-	_ "unsafe"
 )
 
 type Buffer struct {
@@ -62,10 +61,9 @@ func (m *Buffer) Cap() int {
 }
 
 func (m *Buffer) Free() {
-	BufferPool.Free(m)
+	BufferPool.free(m)
 }
 
-//go:linkname NewBuffer github.com/jingyanbin/core/basal.NewBuffer
 func NewBuffer(size int) *Buffer {
-	return BufferPool.New(size)
+	return BufferPool.new(size)
 }

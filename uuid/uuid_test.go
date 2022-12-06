@@ -1,7 +1,7 @@
 package uuid
 
 import (
-	"github.com/jingyanbin/core/internal"
+	"github.com/jingyanbin/core/datetime"
 	"testing"
 )
 
@@ -12,7 +12,7 @@ func TestUUID(t *testing.T) {
 	opt.TimeBits = 35
 	opt.TimeLatest = true
 	opt.WorkerId = 1
-	opt.Epoch = internal.UnixMs() + (3600 * 24 * 397 * 1000)
+	opt.Epoch = datetime.UnixMs() + (3600 * 24 * 397 * 1000)
 	gen := NewGenerator(opt)
 	for i := 0; i < 10; i++ {
 		uid := gen.UUID()
@@ -28,7 +28,7 @@ func BenchmarkUUID(b *testing.B) {
 	opt.TimeBits = 35
 	opt.TimeLatest = false
 	opt.WorkerId = 1
-	opt.Epoch = internal.UnixMs() + (3600 * 24 * 397 * 1000)
+	opt.Epoch = datetime.UnixMs() + (3600 * 24 * 397 * 1000)
 	var gen IGenerator = NewGenerator(opt)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -43,7 +43,7 @@ func BenchmarkUUIDFast(b *testing.B) {
 	opt.TimeBits = 35
 	opt.TimeLatest = false
 	opt.WorkerId = 1
-	opt.Epoch = internal.UnixMs() + (3600 * 24 * 397 * 1000)
+	opt.Epoch = datetime.UnixMs() + (3600 * 24 * 397 * 1000)
 	var gen IGenerator = NewFastGenerator(opt)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -59,7 +59,7 @@ func BenchmarkUUIDParallel(b *testing.B) {
 	opt.TimeBits = 35
 	opt.TimeLatest = true
 	opt.WorkerId = 1
-	opt.Epoch = internal.UnixMs() + (3600 * 24 * 397 * 1000)
+	opt.Epoch = datetime.UnixMs() + (3600 * 24 * 397 * 1000)
 	var gen IGenerator = NewGenerator(opt)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) { //并发
@@ -79,7 +79,7 @@ func BenchmarkUUIDFastParallel(b *testing.B) {
 	opt.TimeBits = 35
 	opt.TimeLatest = true
 	opt.WorkerId = 1
-	opt.Epoch = internal.UnixMs() + (3600 * 24 * 397 * 1000)
+	opt.Epoch = datetime.UnixMs() + (3600 * 24 * 397 * 1000)
 	var gen IGenerator = NewFastGenerator(opt)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) { //并发

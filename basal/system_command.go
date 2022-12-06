@@ -20,10 +20,10 @@ const ERR_PID_NETWORK = -4   //网络协议错误
 type systemCommand struct {
 }
 
-//系统命令
+// 系统命令
 var SystemCmder = &systemCommand{}
 
-//基本命令
+// 基本命令
 func (self *systemCommand) Command(cmd string) (output []byte, err error) {
 	if runtime.GOOS == WINDOWS {
 		return exec.Command("cmd", "/c", cmd).CombinedOutput()
@@ -34,7 +34,7 @@ func (self *systemCommand) Command(cmd string) (output []byte, err error) {
 	}
 }
 
-//根据协议地址端口, 返回使用该端口的进程ID(返回小于0为错误,大于等于0为端口)
+// 根据协议地址端口, 返回使用该端口的进程ID(返回小于0为错误,大于等于0为端口)
 func (self *systemCommand) GetPidByAddr(network string, ip string, port int) int {
 	var pid = ERR_PID_NOT_FOUND //没有找到
 	nwk := strings.ToLower(network)
@@ -106,8 +106,8 @@ func (self *systemCommand) GetPidByAddr(network string, ip string, port int) int
 	return pid
 }
 
-//端口是否被占用
-//network: “http”,“tcp“,“udp“
+// 端口是否被占用
+// network: “http”,“tcp“,“udp“
 func (c *systemCommand) IsUsedPortByAddr(network string, ip string, port int) bool {
 	pid := c.GetPidByAddr(network, ip, port)
 	if pid < 0 {
@@ -116,7 +116,7 @@ func (c *systemCommand) IsUsedPortByAddr(network string, ip string, port int) bo
 	return true
 }
 
-//端口是否被占用(port)
+// 端口是否被占用(port)
 func (c *systemCommand) IsUsedPort(port int) bool {
 	return c.IsUsedPortByAddr("", "", port)
 }

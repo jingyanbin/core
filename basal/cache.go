@@ -1,7 +1,6 @@
 package basal
 
 import (
-	"github.com/jingyanbin/core/internal"
 	"sync"
 	"unsafe"
 	_ "unsafe"
@@ -15,15 +14,15 @@ type KVPair[K comparable, V any] struct {
 type LRUCache[K comparable, V any] struct {
 	mutex sync.Mutex
 	size  int
-	list  *internal.LinkList
-	cache map[K]*internal.LinkListNode
+	list  *LinkList
+	cache map[K]*LinkListNode
 }
 
 func NewLRUCache[K comparable, V any](size int) *LRUCache[K, V] {
 	return &LRUCache[K, V]{
 		size:  size,
-		list:  internal.NewLinkList(),
-		cache: make(map[K]*internal.LinkListNode),
+		list:  NewLinkList(),
+		cache: make(map[K]*LinkListNode),
 	}
 }
 
@@ -72,7 +71,7 @@ func (m *LRUCache[K, V]) Set(key K, value V) {
 			kvBack := (*KVPair[K, V])(back.Value)
 			delete(m.cache, kvBack.Key)
 			if m.list.Remove(back) {
-				//back.Free()
+				//back.free()
 			}
 		}
 	}
@@ -84,7 +83,7 @@ func (m *LRUCache[K, V]) Remove(key K) {
 	if node, ok := m.cache[key]; ok {
 		delete(m.cache, key)
 		if m.list.Remove(node) {
-			//node.Free()
+			//node.free()
 		}
 	}
 }

@@ -3,7 +3,8 @@ package filequeue
 import (
 	"encoding/binary"
 	"github.com/jingyanbin/core/basal"
-	internal "github.com/jingyanbin/core/internal"
+	"github.com/jingyanbin/core/log"
+
 	"os"
 	"sync"
 	"sync/atomic"
@@ -84,7 +85,7 @@ func (m *fileQueuePusher) size() (size int64, err error) {
 			return 0, err
 		}
 	} else {
-		if !internal.IsExistByFileInfo(fi) {
+		if !basal.IsExistByFileInfo(fi) {
 			if err = m.reopen(true); err != nil {
 				return 0, err
 			}
@@ -112,7 +113,7 @@ func (m *fileQueuePusher) reopen(force bool) error {
 			m.f.Sync()
 			m.f.Close()
 		}
-		f, err := internal.OpenFileB(m.conf.option.getMsgFileName(m.conf.index), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		f, err := basal.OpenFileB(m.conf.option.getMsgFileName(m.conf.index), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			m.f = nil
 			return err
@@ -167,7 +168,7 @@ func (m *fileQueuePusher) pushOne(data []byte) (err error) {
 
 func (m *fileQueuePusher) pushBatch(buf *batchBuffer) {
 	if err := m.push(buf.Bytes()); err != nil {
-		internal.Log.Error("FileQueuePusher pushBuffer error: %v, data: %v", err, string(buf.Bytes()))
+		log.Error("FileQueuePusher pushBuffer error: %v, data: %v", err, string(buf.Bytes()))
 	} else {
 		m.conf.AddCount(buf.Count())
 	}
@@ -208,7 +209,7 @@ func (m *fileQueuePusher) run() {
 					timer.Reset(time.Second)
 				}
 			} else {
-				internal.Log.Error("FileQueuePusher run Add error: %v, data: %v", err, string(data))
+				log.Error("FileQueuePusher run Add error: %v, data: %v", err, string(data))
 			}
 
 		case <-timer.C:

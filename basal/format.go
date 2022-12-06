@@ -1,5 +1,9 @@
 package basal
 
+import (
+	"fmt"
+)
+
 type KwArgs map[string]interface{}
 
 func formatBytes(format []byte, signByte, startByte, endByte byte, kws KwArgs, ignore bool) []byte {
@@ -15,11 +19,11 @@ func formatBytes(format []byte, signByte, startByte, endByte byte, kws KwArgs, i
 						if format[end] == endByte {
 							key := string(format[posStartByte+1 : end])
 							if v, ok := kws[key]; ok {
-								buf = append(buf, Sprintf("%v", v)...)
+								buf = append(buf, fmt.Sprintf("%v", v)...)
 								pos = end
 								break
 							} else {
-								panic(Sprintf("format bytes kws not found key: '%s', format: %s", key, string(format)))
+								panic(fmt.Sprintf("format bytes kws not found key: '%s', format: %s", key, string(format)))
 							}
 						}
 					}
@@ -27,21 +31,21 @@ func formatBytes(format []byte, signByte, startByte, endByte byte, kws KwArgs, i
 						if ignore {
 							buf = append(buf, format[pos])
 						} else {
-							panic(Sprintf("format bytes not found end byte: '%s', format: %s", string(endByte), string(format)))
+							panic(fmt.Sprintf("format bytes not found end byte: '%s', format: %s", string(endByte), string(format)))
 						}
 					}
 				} else {
 					if ignore {
 						buf = append(buf, format[pos])
 					} else {
-						panic(Sprintf("format bytes not found start byte: '%s', format: %s", string(startByte), string(format)))
+						panic(fmt.Sprintf("format bytes not found start byte: '%s', format: %s", string(startByte), string(format)))
 					}
 				}
 			} else {
 				if ignore {
 					buf = append(buf, format[pos])
 				} else {
-					panic(Sprintf("format bytes not found start byte out of range: '%s', format: %s", string(startByte), string(format)))
+					panic(fmt.Sprintf("format bytes not found start byte out of range: '%s', format: %s", string(startByte), string(format)))
 				}
 			}
 		} else {
@@ -55,7 +59,7 @@ func Format(format string, sign, startByte, endByte byte, kws KwArgs, ignore boo
 	return string(formatBytes([]byte(format), sign, startByte, endByte, kws, ignore))
 }
 
-//格式器
+// 格式器
 type Formatter struct {
 	signByte  byte
 	startByte byte
@@ -67,11 +71,11 @@ func (m *Formatter) Format(format string, kws KwArgs) string {
 	return string(formatBytes([]byte(format), m.signByte, m.startByte, m.endByte, kws, m.ignore))
 }
 
-//新建格式器
-//signByte标志字符
-//startByte 开始字符
-//endByte 结束字符
-//ignore: true 忽略非完整格式, false 不忽略出现非完整格式后panic
+// 新建格式器
+// signByte标志字符
+// startByte 开始字符
+// endByte 结束字符
+// ignore: true 忽略非完整格式, false 不忽略出现非完整格式后panic
 func NewFormatter(signByte, startByte, endByte byte, ignore bool) *Formatter {
 	return &Formatter{signByte: signByte, startByte: startByte, endByte: endByte, ignore: ignore}
 }

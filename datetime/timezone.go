@@ -1,4 +1,4 @@
-package timezone
+package datetime
 
 import (
 	"strconv"

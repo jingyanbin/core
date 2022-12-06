@@ -2,7 +2,6 @@ package basal
 
 import (
 	"github.com/jingyanbin/core/deepcopy"
-	"github.com/jingyanbin/core/internal"
 )
 
 // 有序集合
@@ -51,9 +50,9 @@ func NewSortedSet(reverse bool, getScore func(v interface{}) int64, getKey func(
 
 func NewSortedSetInt(reverse bool) *SortedSet {
 	getScore := func(v interface{}) int64 {
-		x, err := internal.ToInt64(v)
+		x, err := ToInt64(v)
 		if err != nil {
-			panic(NewError("NewSortedSetInt min not is int: %v", internal.Type(v)))
+			panic(NewError("NewSortedSetInt min not is int: %v", Type(v)))
 		}
 		return x
 	}
