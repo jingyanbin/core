@@ -2,7 +2,7 @@ package xnet
 
 import (
 	"encoding/binary"
-	internal2 "github.com/jingyanbin/basal"
+	"github.com/jingyanbin/core/basal"
 	"github.com/jingyanbin/core/log"
 	"math/rand"
 	"net"
@@ -104,7 +104,7 @@ func (m *TCPConn) Recv() ([]byte, bool) {
 		m.crypt.Decrypt(content, 0, length)
 	}
 	if flag&FLAG_COMPRESS == FLAG_COMPRESS {
-		content, err = internal2.Compress.UnGZip(content)
+		content, err = basal.UnGZip(content)
 		if err != nil {
 			log.Error("tcp recv conn un compress error: %s, %s", m.RemoteAddr(), err.Error())
 			return nil, false
@@ -120,7 +120,7 @@ func (m *TCPConn) Send(msg []byte) bool {
 	if m.flag&FLAG_COMPRESS == FLAG_COMPRESS {
 		if length > netNeedCompressLength {
 			flag |= FLAG_COMPRESS
-			msg = internal2.Compress.GZip(msg)
+			msg = basal.GZip(msg)
 			length = len(msg)
 		}
 	}

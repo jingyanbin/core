@@ -1,8 +1,9 @@
 package uuid
 
 import (
+	"fmt"
 	xtime2 "github.com/jingyanbin/core/datetime"
-	"github.com/jingyanbin/log"
+	"github.com/jingyanbin/core/internal"
 	"time"
 )
 
@@ -33,19 +34,19 @@ type Option struct {
 
 func (m *Option) init() {
 	if m.IndexBits < 1 {
-		panic(log.NewError("uuid option IndexBits less 1: %d", m.IndexBits))
+		panic(internal.NewError("uuid option IndexBits less 1: %d", m.IndexBits))
 	}
 	if m.WorkerIdBits < 1 {
-		panic(log.NewError("uuid option WorkerIdBits less 1: %d", m.WorkerIdBits))
+		panic(internal.NewError("uuid option WorkerIdBits less 1: %d", m.WorkerIdBits))
 	}
 	if m.TimeBits < 1 {
-		panic(log.NewError("uuid option TimeBits less 1: %d", m.TimeBits))
+		panic(internal.NewError("uuid option TimeBits less 1: %d", m.TimeBits))
 	}
 	if totalBits := m.IndexBits + m.WorkerIdBits + m.TimeBits; totalBits > 63 {
-		panic(log.NewError("uuid option total bits more: %d/63", totalBits))
+		panic(internal.NewError("uuid option total bits more: %d/63", totalBits))
 	}
 	if m.Epoch < 1 {
-		panic(log.NewError("uuid option Epoch less 1: %d", m.Epoch))
+		panic(internal.NewError("uuid option Epoch less 1: %d", m.Epoch))
 	}
 
 	m.workerIdShift = m.IndexBits
@@ -57,7 +58,7 @@ func (m *Option) init() {
 	m.timeValueMin = -1 << m.TimeBits
 
 	if m.WorkerId > m.workerIdMax || m.WorkerId < 1 {
-		panic(log.NewError("uuid option WorkerId out of range: 1~%d, %d", m.workerIdMax, m.WorkerId))
+		panic(internal.NewError("uuid option WorkerId out of range: 1~%d, %d", m.workerIdMax, m.WorkerId))
 	}
 	m.dateTimeMin = xtime2.UnixToYmdHMS((m.Epoch+m.timeValueMin)/1000, xtime2.Local())
 	m.dateTimeMax = xtime2.UnixToYmdHMS((m.Epoch+m.timeValueMax)/1000, xtime2.Local())
@@ -65,15 +66,15 @@ func (m *Option) init() {
 	//log.InfoF("uuid option time range: %v, %v, nYear: %v", m.dateTimeMin, m.dateTimeMax, nYear)
 	now := xtime2.UnixMs()
 	if now-m.Epoch < m.timeValueMin {
-		panic(log.NewError("uuid option now time less than time min: %v, nYear: %v", m.dateTimeMin, nYear))
+		panic(internal.NewError("uuid option now time less than time min: %v, nYear: %v", m.dateTimeMin, nYear))
 	}
 	if now-m.Epoch > m.timeValueMax {
-		panic(log.NewError("uuid option now time more than time max: %v, nYear: %v", m.dateTimeMax, nYear))
+		panic(internal.NewError("uuid option now time more than time max: %v, nYear: %v", m.dateTimeMax, nYear))
 	}
 }
 
 func (m *Option) info() string {
 	nYear := (m.timeValueMax - m.timeValueMin) / (3600 * 24 * 365 * 1000)
 	remain := (m.timeValueMax + m.Epoch - xtime2.UnixMs()) / (3600 * 24 * 365 * 1000)
-	return log.sprintf("uuid option index max: %d, worker id max: %d, time range: %s, %s, nYear: %d, remain: %d", m.indexMax, m.workerIdMax, m.dateTimeMin, m.dateTimeMax, nYear, remain)
+	return fmt.Sprintf("uuid option index max: %d, worker id max: %d, time range: %s, %s, nYear: %d, remain: %d", m.indexMax, m.workerIdMax, m.dateTimeMin, m.dateTimeMax, nYear, remain)
 }

@@ -3,9 +3,9 @@ package uuid
 import (
 	"encoding/binary"
 	"encoding/hex"
-	xtime2 "github.com/jingyanbin/core/datetime"
-	log2 "github.com/jingyanbin/core/log"
-	"github.com/jingyanbin/log"
+	"github.com/jingyanbin/core/datetime"
+	"github.com/jingyanbin/core/internal"
+	"github.com/jingyanbin/core/log"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,7 +21,7 @@ type Generator struct {
 
 func NewGenerator(opt Option) *Generator {
 	opt.init()
-	generator := &Generator{lastTime: xtime2.UnixMs(), opt: opt}
+	generator := &Generator{lastTime: datetime.UnixMs(), opt: opt}
 	return generator
 }
 
@@ -31,7 +31,7 @@ func (m *Generator) Info() string {
 
 func (m *Generator) getTimeIndex() (int64, int64) {
 	m.mu.Lock()
-	nowTime := xtime2.UnixMs()
+	nowTime := datetime.UnixMs()
 	m.index = (m.index + 1) & m.opt.indexMax
 	if m.index == 0 {
 		m.lastTime = m.lastTime + 1
@@ -39,10 +39,10 @@ func (m *Generator) getTimeIndex() (int64, int64) {
 	for nowTime < m.lastTime {
 		interval := time.Duration(m.lastTime-nowTime) * time.Millisecond
 		if interval > backTime { //时间回拨超过1秒 一般
-			log2.Error("uuid back in time: %s, sleep: %vms", xtime2.UnixToYmdHMS(m.lastTime/1000, xtime2.Local()), interval.Milliseconds())
+			log.Error("uuid back in time: %s, sleep: %vms", datetime.UnixToYmdHMS(m.lastTime/1000, datetime.Local()), interval.Milliseconds())
 		}
 		time.Sleep(interval)
-		nowTime = xtime2.UnixMs()
+		nowTime = datetime.UnixMs()
 	}
 	curTime, curIndex := m.lastTime, m.index
 	m.mu.Unlock()
@@ -51,14 +51,14 @@ func (m *Generator) getTimeIndex() (int64, int64) {
 
 func (m *Generator) getTimeIndexLatest() (int64, int64) {
 	m.mu.Lock()
-	nowTime := xtime2.UnixMs()
+	nowTime := datetime.UnixMs()
 	for nowTime < m.lastTime {
 		interval := time.Duration(m.lastTime-nowTime) * time.Millisecond
 		if interval > backTime { //时间回拨超过1秒 一般
-			log2.Error("uuid back in time: %s, sleep: %vms", xtime2.UnixToYmdHMS(m.lastTime/1000, xtime2.Local()), interval.Milliseconds())
+			log.Error("uuid back in time: %s, sleep: %vms", datetime.UnixToYmdHMS(m.lastTime/1000, datetime.Local()), interval.Milliseconds())
 		}
 		time.Sleep(interval)
-		nowTime = xtime2.UnixMs()
+		nowTime = datetime.UnixMs()
 	}
 	if nowTime == m.lastTime {
 		m.index = (m.index + 1) & m.opt.indexMax
@@ -83,7 +83,7 @@ func (m *Generator) UUID() int64 {
 	}
 	timeValue := unixMs - m.opt.Epoch
 	if timeValue > m.opt.timeValueMax || timeValue < m.opt.timeValueMin {
-		panic(log.NewError("uuid timeValue out of range: %s~%s, %s", m.opt.dateTimeMin, m.opt.dateTimeMax, xtime2.UnixToYmdHMS(unixMs/1000, xtime2.Local())))
+		panic(internal.NewError("uuid timeValue out of range: %s~%s, %s", m.opt.dateTimeMin, m.opt.dateTimeMax, datetime.UnixToYmdHMS(unixMs/1000, datetime.Local())))
 	}
 	return timeValue<<m.opt.timeShift | m.opt.WorkerId<<m.opt.workerIdShift | index
 }
@@ -144,7 +144,7 @@ func (m *Generator) DeUUIDHexEx(uuidHexEx string) (ms, workerId, index int64, ex
 	}
 	bcc := m.bcc(data, 0, len(data)-1)
 	if bcc != data[len(data)-1] {
-		err = log.NewError("uuid hex ex decode bcc check failed")
+		err = internal.NewError("uuid hex ex decode bcc check failed")
 		return
 	}
 	uuid := int64(binary.BigEndian.Uint64(data[0:]))
@@ -166,7 +166,7 @@ func (m *Generator) ToUUID(uuidHex string) (uuid int64, err error) {
 		return 0, err
 	}
 	if len(data) != 16 {
-		return 0, log.NewError("uuidHex len error: %v", len(data))
+		return 0, internal.NewError("uuidHex len error: %v", len(data))
 	}
 	return int64(binary.BigEndian.Uint64(data)), nil
 }

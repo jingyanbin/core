@@ -6,12 +6,7 @@ import (
 	"io"
 )
 
-var Compress compress
-
-type compress struct {
-}
-
-func (*compress) GZip(data []byte) []byte {
+func GZip(data []byte) []byte {
 	var in bytes.Buffer
 	defer in.Reset()
 	w, err := gzip.NewWriterLevel(&in, 1)
@@ -23,7 +18,7 @@ func (*compress) GZip(data []byte) []byte {
 	return in.Bytes()
 }
 
-func (*compress) UnGZip(data []byte) ([]byte, error) {
+func UnGZip(data []byte) ([]byte, error) {
 	b := bytes.NewReader(data)
 	r, err := gzip.NewReader(b)
 	if err != nil {
