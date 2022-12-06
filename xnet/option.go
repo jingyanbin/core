@@ -15,7 +15,7 @@ type Option struct {
 }
 
 var option = Option{
-	RecvTimeout:          time.Second * 30,
+	RecvTimeout:          time.Second * 180,
 	HandshakeRecvTimeout: time.Second * 5,
 	HandshakeSeed:        3216,
 	CompressLen:          1500,
