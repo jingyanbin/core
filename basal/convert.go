@@ -1,7 +1,11 @@
 package basal
 
 import (
+	"bytes"
 	"fmt"
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
+	"io"
 	"math"
 	"math/rand"
 	"reflect"
@@ -494,4 +498,22 @@ func Shuffle[T any](arr []T) {
 		j := rand.Int63n(i + 1)
 		arr[i], arr[j] = arr[j], arr[i]
 	}
+}
+
+func GBKToUTF8(s []byte) ([]byte, error) {
+	reader := transform.NewReader(bytes.NewReader(s), simplifiedchinese.GBK.NewDecoder())
+	d, e := io.ReadAll(reader)
+	if e != nil {
+		return nil, e
+	}
+	return d, nil
+}
+
+func UTF8ToGBK(s []byte) ([]byte, error) {
+	reader := transform.NewReader(bytes.NewReader(s), simplifiedchinese.GBK.NewEncoder())
+	d, e := io.ReadAll(reader)
+	if e != nil {
+		return nil, e
+	}
+	return d, nil
 }
