@@ -65,7 +65,7 @@ func (my *NextNumber) Next(jump, w int) (int, bool) {
 }
 
 // 获取字符串中所有数字
-func (my *NextNumber) Numbers() []int {
+func (my *NextNumber) IntArr() []int {
 	var res []int
 	for {
 		n, found := my.Next(0, 0)
@@ -78,7 +78,7 @@ func (my *NextNumber) Numbers() []int {
 	return res
 }
 
-func (my *NextNumber) Int32Slice() []int32 {
+func (my *NextNumber) Int32Arr() []int32 {
 	var res []int32
 	for {
 		n, found := my.Next(0, 0)
@@ -86,6 +86,18 @@ func (my *NextNumber) Int32Slice() []int32 {
 			break
 		}
 		res = append(res, int32(n))
+	}
+	return res
+}
+
+func (my *NextNumber) Int64Arr() []int64 {
+	var res []int64
+	for {
+		n, found := my.Next(0, 0)
+		if !found {
+			break
+		}
+		res = append(res, int64(n))
 	}
 	return res
 }

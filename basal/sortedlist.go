@@ -82,7 +82,7 @@ func (my *SortedList) SearchByScore(score int64) (index int, found bool) {
 			} else if cmp == 0 {
 				return index, true
 			} else {
-				panic(NewError("func cmp rturn value not in (-1, 0, 1)"))
+				panic(NewError("func cmp return value not in (-1, 0, 1)"))
 			}
 		} else { //正序
 			if cmp == 1 {
@@ -92,7 +92,7 @@ func (my *SortedList) SearchByScore(score int64) (index int, found bool) {
 			} else if cmp == 0 {
 				return index, true
 			} else {
-				panic(NewError("func cmp rturn value not in (-1, 0, 1)"))
+				panic(NewError("func cmp return value not in (-1, 0, 1)"))
 			}
 		}
 		if start > end {

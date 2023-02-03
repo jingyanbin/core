@@ -1018,7 +1018,7 @@ func UnixHourStartTimeNext(unix int64, days, hour, min, sec int, zone TimeZone) 
 //
 
 func UnixBetweenWeekTimeA(unix int64, startTime, endTime string, zone TimeZone) (bool, error) {
-	startNums, endNums := internal.NewNextNumber(startTime).Numbers(), internal.NewNextNumber(endTime).Numbers()
+	startNums, endNums := internal.NewNextNumber(startTime).IntArr(), internal.NewNextNumber(endTime).IntArr()
 	if len(startNums) != 4 || len(endNums) != 4 {
 		return false, internal.NewError("time error: %s, %s", startTime, endTime)
 	}
@@ -1060,7 +1060,7 @@ func UnixBetweenWeekTimeA(unix int64, startTime, endTime string, zone TimeZone) 
 //
 
 func UnixBetweenMonthTime(unix int64, startTime string, endTime string, zone TimeZone) (bool, error) {
-	startNums, endNums := internal.NewNextNumber(startTime).Numbers(), internal.NewNextNumber(endTime).Numbers()
+	startNums, endNums := internal.NewNextNumber(startTime).IntArr(), internal.NewNextNumber(endTime).IntArr()
 	if len(startNums) != 5 || len(endNums) != 5 {
 		return false, internal.NewError("time error: %s, %s", startTime, endTime)
 	}
@@ -1103,7 +1103,7 @@ func UnixBetweenMonthTime(unix int64, startTime string, endTime string, zone Tim
 //
 
 func UnixBetweenHourTime(unix int64, startTime string, endTime string, zone TimeZone) (bool, error) {
-	startNums, endNums := internal.NewNextNumber(startTime).Numbers(), internal.NewNextNumber(endTime).Numbers()
+	startNums, endNums := internal.NewNextNumber(startTime).IntArr(), internal.NewNextNumber(endTime).IntArr()
 	if len(startNums) != 3 || len(endNums) != 3 {
 		return false, internal.NewError("time error: %s, %s", startTime, endTime)
 	}
@@ -1148,7 +1148,7 @@ func UnixBetweenHourTime(unix int64, startTime string, endTime string, zone Time
 //
 
 func UnixBetweenHourTimeEx(unix int64, startHms string, endHms string, zone TimeZone) (bool, int64, int64, error) {
-	startNums, endNums := internal.NewNextNumber(startHms).Numbers(), internal.NewNextNumber(endHms).Numbers()
+	startNums, endNums := internal.NewNextNumber(startHms).IntArr(), internal.NewNextNumber(endHms).IntArr()
 	if len(startNums) != 3 || len(endNums) != 3 {
 		return false, 0, 0, internal.NewError("time error: %s, %s", startHms, endHms)
 	}
@@ -1383,7 +1383,7 @@ func SeasonId(startUnix int64, unix int64, monthNum, offset int, zone TimeZone) 
 //	@param startUnix 阶段开始时间戳 单位: 秒
 //	@param seasonId 阶段ID
 //	@param monthNum 一个阶段多少月
-//	@param offset 偏移量 秒数 最大3600*24*28
+//	@param offset 偏移量 秒数 最大3600*24*28, 控制隔天的偏移量
 //	@param firstStartTime 第一个阶段是否从月的第一天开始, 否则从真实时间开始
 //	@param zone 时区
 //	@return begin 返回阶段的开始时间

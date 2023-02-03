@@ -73,3 +73,19 @@ func (m *UnicodeChecker) Replace(s string, rep rune) string {
 	buf := m.runesReplace([]rune(s), rep)
 	return string(buf)
 }
+
+type LenChecker func(r rune) int
+
+func (m *LenChecker) Len(s string) (n int) {
+	for _, c := range s {
+		n += (*m)(c)
+	}
+	return
+}
+
+func (m *LenChecker) Check(s string, max int) bool {
+	if n := m.Len(s); n > max {
+		return false
+	}
+	return true
+}

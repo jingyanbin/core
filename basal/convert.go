@@ -334,8 +334,8 @@ func NumberToBool[T Number](value T) bool {
 
 // 驼峰写法转下划线小写 eg: LevelAbc=>level_abc
 func ToLowerLine(s string) string {
-	s2 := make([]byte, 0, len(s)+1)
-	for i, c := range []byte(s) {
+	s2 := make([]rune, 0, len(s)+1)
+	for i, c := range []rune(s) {
 		if c > 64 && c < 91 {
 			if i > 0 {
 				s2 = append(s2, '_')
@@ -516,4 +516,7 @@ func UTF8ToGBK(s []byte) ([]byte, error) {
 		return nil, e
 	}
 	return d, nil
+}
+func as() {
+
 }

@@ -84,9 +84,23 @@ func (m *StdLogger) push(buf *internal.Buffer) {
 	m.ch <- buf
 }
 
+func (m *StdLogger) outputF(level string, file string, line int, format string, v ...interface{}) {
+	var context string
+	if len(v) > 0 {
+		context = fmt.Sprintf(format, v...)
+	} else {
+		context = format
+	}
+	buf := internal.NewBuffer(200 + len(context))
+	m.formatHeader(buf, level, file, line, time.Now())
+	buf.AppendString(context)
+	buf.AppendByte('\n')
+	m.push(buf)
+}
+
 func (m *StdLogger) output(level string, file string, line int, v ...interface{}) {
 	var context string
-	if len(v) > 1 {
+	if len(v) > 0 {
 		if format, ok := v[0].(string); ok {
 			context = fmt.Sprintf(format, v[1:]...)
 		} else {
@@ -158,4 +172,44 @@ func (m *StdLogger) Fatal(v ...any) {
 	}
 	file, line := internal.CallerShort(logSkip)
 	m.output("F", file, line, v...)
+}
+
+func (m *StdLogger) DebugF(format string, v ...any) {
+	if m.level > DEBUG {
+		return
+	}
+	file, line := internal.CallerShort(logSkip)
+	m.outputF("D", file, line, format, v...)
+}
+
+func (m *StdLogger) InfoF(format string, v ...any) {
+	if m.level > INFO {
+		return
+	}
+	file, line := internal.CallerShort(logSkip)
+	m.outputF("I", file, line, format, v...)
+}
+
+func (m *StdLogger) WarnF(format string, v ...any) {
+	if m.level > WARN {
+		return
+	}
+	file, line := internal.CallerShort(logSkip)
+	m.outputF("W", file, line, format, v...)
+}
+
+func (m *StdLogger) ErrorF(format string, v ...any) {
+	if m.level > ERROR {
+		return
+	}
+	file, line := internal.CallerShort(logSkip)
+	m.outputF("E", file, line, format, v...)
+}
+
+func (m *StdLogger) FatalF(format string, v ...any) {
+	if m.level > FATAL {
+		return
+	}
+	file, line := internal.CallerShort(logSkip)
+	m.outputF("F", file, line, format, v...)
 }

@@ -57,7 +57,7 @@ func NewSortedSetInt(reverse bool) *SortedSet {
 		return x
 	}
 	set := NewSortedSet(
-		false,
+		reverse,
 		getScore, getScore)
 	return set
 }

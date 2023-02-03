@@ -126,6 +126,11 @@ func (m *LinkList) PushFront(v unsafe.Pointer) *LinkListNode {
 	return m.insertValue(v, &m.root)
 }
 
+func (m *LinkList) PushNodeFront(node *LinkListNode) *LinkListNode {
+	m.lazyInit()
+	return m.insert(node, &m.root)
+}
+
 func (m *LinkList) PushBack(v unsafe.Pointer) *LinkListNode {
 	m.lazyInit()
 	return m.insertValue(v, m.root.prev)
